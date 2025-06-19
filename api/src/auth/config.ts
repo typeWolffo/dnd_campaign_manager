@@ -6,6 +6,8 @@ import { users, sessions, accounts, verificationTokens } from "../db/schema";
 
 console.log("🔐 Initializing Better Auth...");
 
+const isDev = process.env.NODE_ENV === "development";
+
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
@@ -18,11 +20,23 @@ export const auth = betterAuth({
   }),
   secret: process.env.BETTER_AUTH_SECRET!,
   basePath: "/auth",
-  trustedOrigins: ["http://localhost:5173"],
+  trustedOrigins: [
+    process.env.APP_URL || '',
+  ],
   advanced: {
     database: {
       generateId: () => crypto.randomUUID(),
     },
+    // Only in development - allow JS access to session cookie
+    ...(isDev && {
+      cookies: {
+        session_token: {
+          attributes: {
+            httpOnly: false,
+          },
+        },
+      },
+    }),
   },
   plugins: [
     openAPI(),

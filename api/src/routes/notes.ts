@@ -3,6 +3,7 @@ import { db } from "../db/connection";
 import { notes, noteSections, rooms, roomMembers } from "../db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { auth } from "../auth/config";
+import { broadcastToRoom } from "../lib/websocket-utils";
 
 const RoomIdSchema = t.Object({
   id: t.String(),
@@ -179,6 +180,12 @@ export const notesRouter = new Elysia({ prefix: "/rooms" })
           })));
       }
 
+      broadcastToRoom(params.id, {
+        type: "note_update",
+        action: "updated",
+        noteId: existingNote.id,
+      });
+
       return { id: existingNote.id, updated: true };
     } else {
       const newNote = await db
@@ -202,6 +209,12 @@ export const notesRouter = new Elysia({ prefix: "/rooms" })
             orderIndex: section.orderIndex,
           })));
       }
+
+      broadcastToRoom(params.id, {
+        type: "note_update",
+        action: "created",
+        noteId: newNote[0].id,
+      });
 
       return { id: newNote[0].id, created: true };
     }
@@ -257,6 +270,12 @@ export const notesRouter = new Elysia({ prefix: "/rooms" })
       }
     }
 
+    broadcastToRoom(params.id, {
+      type: "note_update",
+      action: "updated",
+      noteId: params.noteId,
+    });
+
     return { success: true };
   }, {
     params: NoteIdSchema,
@@ -286,6 +305,12 @@ export const notesRouter = new Elysia({ prefix: "/rooms" })
     await db
       .delete(notes)
       .where(eq(notes.id, params.noteId));
+
+    broadcastToRoom(params.id, {
+      type: "note_update",
+      action: "deleted",
+      noteId: params.noteId,
+    });
 
     return { success: true };
   }, {

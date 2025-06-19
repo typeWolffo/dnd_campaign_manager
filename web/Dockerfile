@@ -1,22 +1,56 @@
-FROM node:20-alpine AS development-dependencies-env
-COPY . /app
+# Install all dependencies
+FROM oven/bun:1 AS deps
 WORKDIR /app
-RUN npm ci
+COPY package.json bun.lockb ./
+RUN bun install
 
-FROM node:20-alpine AS production-dependencies-env
-COPY ./package.json package-lock.json /app/
+# Install production dependencies only
+FROM oven/bun:1 AS prod-deps
 WORKDIR /app
-RUN npm ci --omit=dev
+COPY package.json bun.lockb ./
+RUN bun install --production
 
-FROM node:20-alpine AS build-env
-COPY . /app/
-COPY --from=development-dependencies-env /app/node_modules /app/node_modules
+# Build stage
+FROM oven/bun:1 AS build
 WORKDIR /app
-RUN npm run build
 
-FROM node:20-alpine
-COPY ./package.json package-lock.json /app/
-COPY --from=production-dependencies-env /app/node_modules /app/node_modules
-COPY --from=build-env /app/build /app/build
+# Copy source and dependencies
+COPY . ./
+COPY --from=deps /app/node_modules ./node_modules
+
+# Build the application
+RUN bun run build
+
+# Production stage
+FROM oven/bun:1-alpine
+
 WORKDIR /app
-CMD ["npm", "run", "start"]
+
+# Copy package files and production dependencies
+COPY package.json bun.lockb ./
+COPY --from=prod-deps /app/node_modules ./node_modules
+
+# Copy built application
+COPY --from=build /app/build ./build
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs &&
+    adduser -S react -u 1001 -G nodejs
+
+# Change ownership and switch to non-root user
+RUN chown -R react:nodejs /app
+USER react
+
+# Environment
+ENV NODE_ENV=production
+ENV PORT=3000
+
+# Expose port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD curl -f http://localhost:3000 || exit 1
+
+# Start the application
+CMD ["bun", "run", "start"]

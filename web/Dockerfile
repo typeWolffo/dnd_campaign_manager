@@ -1,58 +1,36 @@
-# Install all dependencies
-FROM oven/bun:1 AS deps
-WORKDIR /app
-COPY package.json ./
-COPY bun.lock ./
-RUN bun install
+FROM node:20-alpine AS build
 
-# Install production dependencies only
-FROM oven/bun:1 AS prod-deps
-WORKDIR /app
-COPY package.json ./
-COPY bun.lock ./
-RUN bun install --production
-
-# Build stage
-FROM oven/bun:1 AS build
 WORKDIR /app
 
-# Copy source and dependencies
+# Install dependencies
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+# Build application
 COPY . ./
-COPY --from=deps /app/node_modules ./node_modules
-
-# Build the application
-RUN bun run build
+RUN npm run build
 
 # Production stage
-FROM oven/bun:1-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy package files and production dependencies
-COPY package.json ./
-COPY bun.lock ./
-COPY --from=prod-deps /app/node_modules ./node_modules
+# Copy package files and install production deps
+COPY package.json package-lock.json* ./
+RUN npm ci --omit=dev
 
-# Copy built application
+# Copy built app
 COPY --from=build /app/build ./build
 
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S -u 1001 -G nodejs react
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs &&
+    adduser -S -u 1001 -G nodejs react
 
-# Change ownership and switch to non-root user
 RUN chown -R react:nodejs /app
 USER react
 
-# Environment
 ENV NODE_ENV=production
 ENV PORT=3000
-
-# Expose port
 EXPOSE 3000
 
-RUN apk add --no-cache curl
-HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
-    CMD curl -f http://localhost:3000 || exit 1
-
-# Start the application
-CMD ["bun", "run", "start"]
+CMD ["npm", "run", "start"]

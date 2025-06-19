@@ -37,7 +37,7 @@ jobs:
         id: meta-api
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/my-app-api
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/dnd-api
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -85,7 +85,7 @@ jobs:
         id: meta-web
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/my-app-web
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/dnd-web
           tags: |
             type=ref,event=branch
             type=ref,event=pr

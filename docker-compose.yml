@@ -1,0 +1,22 @@
+services:
+  project-db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: dnd
+      POSTGRES_DB: dnd
+    volumes:
+      - dnd-db-data:/var/lib/postgresql/data
+    ports:
+      - 5431:5432
+  mailhog:
+    image: mailhog/mailhog
+    platform: linux/amd64
+    ports:
+      - 1025:1025
+      - 8025:8025
+
+
+volumes:
+  dnd-db-data:
+    driver: local

@@ -1,0 +1,11 @@
+dist/
+node_modules/
+.react-router/
+build/
+*.min.js
+*.min.css
+package-lock.json
+bun.lock
+.prettierrc
+**/components/ui/
+**/components.json

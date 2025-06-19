@@ -1,11 +1,10 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
+	"id": "dnd-campaign-manager",
+	"name": "D&D Campaign Manager",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"description": "Publish notes to your D&D campaign using [PUBLIC] markers. Sync with campaign management platform.",
+	"author": "D&D Campaign Manager",
+	"authorUrl": "https://github.com/your-repo/dnd-campaign-manager",
 	"isDesktopOnly": false
 }

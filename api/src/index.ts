@@ -5,24 +5,18 @@ import { auth } from "./auth/config";
 import { roomsRouter } from "./routes/rooms";
 import { notesRouter } from "./routes/notes";
 import { websocketRouter } from "./routes/websocket";
-import { db } from "./db/connection";
-import { migrate } from 'drizzle-orm/postgres-js/migrator'
 
 
-async function runMigrations() {
-  try {
-    console.log('🔄 Running database migrations...')
-    await migrate(db, { migrationsFolder: '../drizzle' })
-    console.log('✅ Migrations completed successfully')
-  } catch (error) {
-    console.error('❌ Migration failed:', error)
-    process.exit(1)
-  }
-}
-
-if (process.env.NODE_ENV === 'production') {
-  await runMigrations()
-}
+// async function runMigrations() {
+//   try {
+//     console.log('🔄 Running database migrations...')
+//     await migrate(db, { migrationsFolder: '/app/drizzle' })
+//     console.log('✅ Migrations completed successfully')
+//   } catch (error) {
+//     console.error('❌ Migration failed:', error)
+//     process.exit(1)
+//   }
+// }
 
 console.log("🚀 Setting up Elysia server...");
 
@@ -67,7 +61,10 @@ const app = new Elysia({ prefix: "/api" })
   .get("/user", ({ user }) => user, {
     auth: true,
   })
-  .listen(3001);
+  .listen({
+    port: Number(process.env.PORT) || 3001,
+    hostname: '0.0.0.0'
+  });
 
 console.log("🦊 Elysia is running at", `${app.server?.hostname}:${app.server?.port}`);
 console.log("🔍 Available routes should include /api/auth/* endpoints");

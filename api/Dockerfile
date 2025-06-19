@@ -3,8 +3,9 @@ FROM oven/bun:1 AS build
 
 WORKDIR /app
 
-# Cache packages installation
-COPY package.json bun.lockb ./
+COPY package.json ./
+COPY bun.lock ./
+
 RUN bun install --frozen-lockfile
 
 # Copy source code

@@ -4,6 +4,25 @@ import { swagger } from "@elysiajs/swagger";
 import { auth } from "./auth/config";
 import { roomsRouter } from "./routes/rooms";
 import { notesRouter } from "./routes/notes";
+import { websocketRouter } from "./routes/websocket";
+import { db } from "./db/connection";
+import { migrate } from 'drizzle-orm/postgres-js/migrator'
+
+
+async function runMigrations() {
+  try {
+    console.log('🔄 Running database migrations...')
+    await migrate(db, { migrationsFolder: '../drizzle' })
+    console.log('✅ Migrations completed successfully')
+  } catch (error) {
+    console.error('❌ Migration failed:', error)
+    process.exit(1)
+  }
+}
+
+if (process.env.NODE_ENV === 'production') {
+  await runMigrations()
+}
 
 console.log("🚀 Setting up Elysia server...");
 
@@ -30,15 +49,19 @@ console.log("🔐 Better Auth middleware created");
 
 const app = new Elysia({ prefix: "/api" })
   .use(cors({
-    origin: ["http://localhost:5173"],
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    origin: [
+     process.env.APP_URL || ''
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
+    exposeHeaders: ["Set-Cookie"],
   }))
   .use(swagger())
   .use(betterAuth)
   .use(roomsRouter)
   .use(notesRouter)
+  .use(websocketRouter)
   .get("/", () => "D&D Campaign Manager API")
   .get("/health", () => ({ status: "ok", timestamp: new Date().toISOString() }))
   .get("/user", ({ user }) => user, {

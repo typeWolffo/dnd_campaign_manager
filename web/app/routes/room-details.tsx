@@ -1,6 +1,7 @@
 import { useNavigate, Link, redirect, useLoaderData } from "react-router";
 import { useSession } from "../lib/auth-client";
 import { useRoom, useRemoveMember } from "../lib/api-hooks";
+import { useRoomWebSocket } from "../lib/use-websocket";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
@@ -8,7 +9,7 @@ import { Avatar, AvatarFallback } from "../components/ui/avatar";
 import { AddMemberDialog } from "../components/AddMemberDialog";
 import { NotesSection } from "../components/NotesSection";
 import { useEffect, useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, Wifi, WifiOff } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,7 @@ export default function RoomDetails() {
   const { roomId } = useLoaderData<typeof clientLoader>();
   const { data: session, isPending: sessionLoading } = useSession();
   const { data: room, isLoading: roomLoading, error: roomError } = useRoom(roomId);
+  const { status: wsStatus, isConnected } = useRoomWebSocket(roomId);
   const navigate = useNavigate();
   const removeMember = useRemoveMember(roomId);
   const [memberToRemove, setMemberToRemove] = useState<{ id: string; name: string } | null>(null);
@@ -98,9 +100,18 @@ export default function RoomDetails() {
               </Button>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{room.name}</h1>
-                <Badge variant={isGM ? "default" : "secondary"}>
-                  {isGM ? "Game Master" : "Player"}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant={isGM ? "default" : "secondary"}>
+                    {isGM ? "Game Master" : "Player"}
+                  </Badge>
+                  <Badge
+                    variant={isConnected ? "default" : "secondary"}
+                    className="flex items-center gap-1"
+                  >
+                    {isConnected ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
+                    {wsStatus}
+                  </Badge>
+                </div>
               </div>
             </div>
           </div>

@@ -11,18 +11,23 @@ RUN npm install
 COPY . ./
 RUN npm run build
 
-FROM node:20-alpine
+FROM nginx:alpine
 
-WORKDIR /app
+COPY --from=build /app/build/client /usr/share/nginx/html
 
-COPY package.json ./
-RUN npm install --production
+COPY /etc/nginx/conf.d/default.conf <<EOF
+server {
+    listen 80;
+    server_name localhost;
+    root /usr/share/nginx/html;
+    index index.html;
 
-COPY --from=build /app/build ./build
+    location / {
+        try_files \$uri \$uri/ /index.html;
+    }
+}
+EOF
 
-ENV NODE_ENV=production
-ENV PORT=3000
+EXPOSE 80
 
-EXPOSE 3000
-
-CMD ["npm", "run", "start"]
+CMD ["nginx", "-g", "daemon off;"]

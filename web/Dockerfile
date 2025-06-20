@@ -15,7 +15,7 @@ FROM nginx:alpine
 
 COPY --from=build /app/build/client /usr/share/nginx/html
 
-COPY /etc/nginx/conf.d/default.conf <<EOF
+RUN cat >/etc/nginx/conf.d/default.conf <<'EOF'
 server {
     listen 80;
     server_name localhost;
@@ -23,7 +23,7 @@ server {
     index index.html;
 
     location / {
-        try_files \$uri \$uri/ /index.html;
+        try_files $uri $uri/ /index.html;
     }
 }
 EOF

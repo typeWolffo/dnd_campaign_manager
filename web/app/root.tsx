@@ -9,6 +9,7 @@ import {
 
 import type { Route } from "./+types/root";
 import { QueryProvider } from "./lib/query-client";
+import { WebSocketProvider } from "./lib/websocket-context";
 import "./app.css";
 import type { ReactNode } from "react";
 
@@ -46,7 +47,9 @@ export function Layout({ children }: { children: ReactNode }) {
 export default function App() {
   return (
     <QueryProvider>
-      <Outlet />
+      <WebSocketProvider>
+        <Outlet />
+      </WebSocketProvider>
     </QueryProvider>
   );
 }

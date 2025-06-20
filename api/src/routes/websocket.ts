@@ -4,38 +4,44 @@ import { db } from "../db/connection";
 import { rooms, roomMembers, sessions, users } from "../db/schema";
 import { eq, and } from "drizzle-orm";
 import { addConnection, removeConnection, broadcastToRoom } from "../lib/websocket-utils";
+import {
+  ConnectionInfo,
+  IncomingMessage,
+  IncomingMessageSchema,
+  WebSocketQuerySchema,
+  NoteUpdateData,
+  MemberUpdateData,
+  type NoteUpdateMessage,
+  type MemberUpdateMessage,
+} from "../schemas/websocket";
 
-type ConnectionInfo = {
-  userId: string;
-  userName: string;
-  roomId: string;
-  role: string;
-};
-
-const connections = new Map<string, { ws: any; info: ConnectionInfo }>();
-
-const MessageSchema = t.Object({
-  type: t.Union([
-    t.Literal("note_update"),
-    t.Literal("member_update"),
-  ]),
-  roomId: t.String(),
-  data: t.Optional(t.Any()),
-});
+const connections = new Map<string, { ws: unknown; info: ConnectionInfo }>();
 
 export const websocketRouter = new Elysia()
+  .onRequest((context) => {
+    if (context.request.url.includes('/ws')) {
+      console.log("🌍 WebSocket request received:", context.request.url);
+    }
+  })
+  .onError(({ error, code }) => {
+    if (code === 'VALIDATION') {
+      console.log("❌ WebSocket validation error:", error);
+    } else {
+      console.log("❌ WebSocket error:", code, error);
+    }
+    return { error: String(error), code };
+  })
   .ws("/ws", {
-    query: t.Object({
-      token: t.String(),
-      roomId: t.String(),
-    }),
+    query: WebSocketQuerySchema,
 
     async open(ws) {
+      console.log("🔌 WebSocket open event triggered");
       const { token, roomId } = ws.data.query;
 
       try {
         console.log("🔌 WebSocket connecting with token:", token?.substring(0, 10) + "...");
         console.log("🔌 WebSocket roomId:", roomId);
+        console.log("🔌 Token length:", token?.length);
 
         // Try to verify session directly using the token
         let session = null;
@@ -176,7 +182,7 @@ export const websocketRouter = new Elysia()
       }
     },
 
-    message(ws, message) {
+    message(ws, message: IncomingMessage) {
       try {
         const connectionId = findConnectionId(ws);
         if (!connectionId) return;
@@ -194,21 +200,27 @@ export const websocketRouter = new Elysia()
 
         switch (type) {
           case "note_update":
-            if (info.role === "gm") {
-              broadcastToRoom(roomId, {
+            if (info.role === "gm" && data) {
+              const noteData = data as NoteUpdateData;
+              const noteUpdateMessage: NoteUpdateMessage = {
                 type: "note_update",
-                noteId: data.noteId,
-                action: data.action,
-              }, connectionId);
+                noteId: noteData.noteId,
+                action: noteData.action,
+              };
+              broadcastToRoom(roomId, noteUpdateMessage, connectionId);
             }
             break;
 
           case "member_update":
-            broadcastToRoom(roomId, {
-              type: "member_update",
-              action: data.action,
-              member: data.member,
-            }, connectionId);
+            if (data) {
+              const memberData = data as MemberUpdateData;
+              const memberUpdateMessage: MemberUpdateMessage = {
+                type: "member_update",
+                action: memberData.action,
+                member: memberData.member,
+              };
+              broadcastToRoom(roomId, memberUpdateMessage, connectionId);
+            }
             break;
 
           default:
@@ -235,10 +247,10 @@ export const websocketRouter = new Elysia()
       }
     },
 
-    body: MessageSchema,
+    body: IncomingMessageSchema,
   });
 
-function findConnectionId(ws: any): string | null {
+function findConnectionId(ws: unknown): string | null {
   for (const [id, connection] of connections) {
     if (connection.ws === ws) return id;
   }

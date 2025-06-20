@@ -1,9 +1,11 @@
 export type WebSocketMessage = {
   type: string;
-  [key: string]: any;
+  [key: string]: unknown;
 };
 
 export type WebSocketStatus = "connecting" | "connected" | "disconnected" | "error";
+
+type WebSocketListener<T = WebSocketMessage> = (data: T) => void;
 
 export class RoomWebSocket {
   private ws: WebSocket | null = null;
@@ -13,18 +15,16 @@ export class RoomWebSocket {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
-  private listeners = new Map<string, Set<(data: any) => void>>();
+  private listeners = new Map<string, Set<WebSocketListener>>();
   private statusListeners = new Set<(status: WebSocketStatus) => void>();
 
   constructor(roomId: string, token: string) {
     this.roomId = roomId;
     this.token = token;
 
-    const isDev = window.location.hostname === "localhost";
-    const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = isDev ? "localhost:3001" : "api-dnd.faily-tales.com";
-
-    this.url = `${wsProtocol}//${host}/api/ws?token=${token}&roomId=${roomId}`;
+    const apiUrl = import.meta.env.VITE_API_URL;
+    const wsUrl = apiUrl.replace(/^https?:/, apiUrl.includes("https") ? "wss:" : "ws:");
+    this.url = `${wsUrl}/api/ws?token=${token}&roomId=${roomId}`;
   }
 
   connect(): Promise<void> {
@@ -34,7 +34,6 @@ export class RoomWebSocket {
         this.notifyStatus("connecting");
 
         this.ws.onopen = () => {
-          console.log("🔌 WebSocket connected to room:", this.roomId);
           this.reconnectAttempts = 0;
           this.notifyStatus("connected");
           resolve();
@@ -50,7 +49,6 @@ export class RoomWebSocket {
         };
 
         this.ws.onclose = event => {
-          console.log("🔌 WebSocket closed:", event.code, event.reason);
           this.notifyStatus("disconnected");
 
           if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
@@ -73,8 +71,6 @@ export class RoomWebSocket {
   private reconnect() {
     this.reconnectAttempts++;
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
-
-    console.log(`🔄 Reconnecting to WebSocket in ${delay}ms (attempt ${this.reconnectAttempts})`);
 
     setTimeout(() => {
       this.connect().catch(console.error);
@@ -104,7 +100,7 @@ export class RoomWebSocket {
     });
   }
 
-  send(type: string, data?: any) {
+  send(type: string, data?: unknown) {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(
         JSON.stringify({
@@ -118,17 +114,18 @@ export class RoomWebSocket {
     }
   }
 
-  on(type: string, listener: (data: any) => void) {
+  on<T = WebSocketMessage>(type: string, listener: WebSocketListener<T>) {
     if (!this.listeners.has(type)) {
       this.listeners.set(type, new Set());
     }
-    this.listeners.get(type)!.add(listener);
+
+    this.listeners.get(type)?.add(listener as WebSocketListener);
   }
 
-  off(type: string, listener: (data: any) => void) {
+  off<T = WebSocketMessage>(type: string, listener: WebSocketListener<T>) {
     const listeners = this.listeners.get(type);
     if (listeners) {
-      listeners.delete(listener);
+      listeners.delete(listener as WebSocketListener);
     }
   }
 

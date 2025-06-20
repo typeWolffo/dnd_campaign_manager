@@ -20,9 +20,7 @@ export const auth = betterAuth({
   }),
   secret: process.env.BETTER_AUTH_SECRET!,
   basePath: "/auth",
-  trustedOrigins: [
-    process.env.APP_URL || '',
-  ],
+  trustedOrigins: [process.env.APP_URL || "", "https://5883-194-33-77-103.ngrok-free.app"],
   advanced: {
     database: {
       generateId: () => crypto.randomUUID(),

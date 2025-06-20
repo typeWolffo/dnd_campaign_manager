@@ -1,6 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { useRoomNotes } from "../lib/api-hooks";
 import { Clock, FileText } from "lucide-react";
+import { useState } from "react";
+import { Files, Folder, File } from "./animate-ui/components/files";
 
 interface NoteSection {
   id?: string;
@@ -9,13 +11,83 @@ interface NoteSection {
   orderIndex: number;
 }
 
+interface Note {
+  id: string;
+  title: string;
+  obsidianPath: string;
+  lastSync: string;
+  createdAt: string;
+  updatedAt: string;
+  sections: NoteSection[];
+}
+
 interface NotesSectionProps {
   roomId: string;
   isGM: boolean;
 }
 
+// Helper to build folder structure from notes
+const buildFolderStructure = (notes: Note[]) => {
+  const structure: Record<string, any> = {};
+
+  notes.forEach(note => {
+    const pathParts = note.obsidianPath.split("/");
+    const fileName = pathParts.pop() || note.title;
+
+    let current = structure;
+    pathParts.forEach(folder => {
+      if (!current[folder]) {
+        current[folder] = {};
+      }
+      current = current[folder];
+    });
+
+    if (!current._files) {
+      current._files = [];
+    }
+    current._files.push({ ...note, fileName });
+  });
+
+  return structure;
+};
+
+// Render folder structure recursively
+const renderFolderStructure = (
+  structure: Record<string, any>,
+  selectedNote: Note | null,
+  onNoteSelect: (note: Note) => void,
+  path = ""
+) => {
+  return Object.entries(structure).map(([key, value]) => {
+    if (key === "_files") {
+      return value.map((note: Note & { fileName: string }) => (
+        <File
+          key={note.id}
+          name={note.fileName.replace(".md", "")}
+          className={selectedNote?.id === note.id ? "bg-primary/10" : ""}
+          onClick={() => onNoteSelect(note)}
+          sideComponent={
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Clock className="h-3 w-3" />
+              {new Date(note.updatedAt).toLocaleDateString()}
+            </div>
+          }
+        />
+      ));
+    }
+
+    const folderPath = path ? `${path}/${key}` : key;
+    return (
+      <Folder key={folderPath} name={key}>
+        {renderFolderStructure(value, selectedNote, onNoteSelect, folderPath)}
+      </Folder>
+    );
+  });
+};
+
 export function NotesSection({ roomId, isGM }: NotesSectionProps) {
   const { data: notes, isLoading, error } = useRoomNotes(roomId);
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
 
   if (isLoading) {
     return (
@@ -71,45 +143,72 @@ export function NotesSection({ roomId, isGM }: NotesSectionProps) {
     );
   }
 
+  const folderStructure = buildFolderStructure(notes);
+
   return (
     <div className="space-y-6">
-      {notes.map(note => (
-        <Card key={note.id}>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                {note.title}
-              </CardTitle>
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <Clock className="h-4 w-4" />
-                {new Date(note.updatedAt).toLocaleDateString()}
-              </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Campaign Notes</CardTitle>
+          <CardDescription>Published notes from your Obsidian vault</CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 h-[600px]">
+            {/* Files Explorer */}
+            <div className="border-r">
+              <Files className="border-0 rounded-none h-full">
+                {renderFolderStructure(folderStructure, selectedNote, setSelectedNote)}
+              </Files>
             </div>
-            {note.obsidianPath && isGM && (
-              <CardDescription>Source: {note.obsidianPath}</CardDescription>
-            )}
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {note.sections?.map((section: NoteSection, index: number) => (
-                <div key={section.id || index} className="relative">
-                  <div className={`prose prose-sm max-w-none dark:prose-invert`}>
-                    <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
-                      {section.content}
-                    </pre>
+
+            {/* Note Content */}
+            <div className="p-6 overflow-auto">
+              {selectedNote ? (
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">{selectedNote.title}</h3>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Clock className="h-4 w-4" />
+                      {new Date(selectedNote.updatedAt).toLocaleDateString()}
+                    </div>
+                  </div>
+
+                  {selectedNote.obsidianPath && isGM && (
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Source: {selectedNote.obsidianPath}
+                    </p>
+                  )}
+
+                  <div className="space-y-4">
+                    {selectedNote.sections?.map((section: NoteSection, index: number) => (
+                      <div key={section.id || index} className="relative">
+                        <div className="prose prose-sm max-w-none dark:prose-invert">
+                          <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
+                            {section.content}
+                          </pre>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {selectedNote.lastSync && (
+                    <div className="mt-4 pt-4 border-t text-xs text-muted-foreground">
+                      Last synced: {new Date(selectedNote.lastSync).toLocaleString()}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  <div className="text-center">
+                    <FileText className="mx-auto h-12 w-12 mb-4" />
+                    <p>Select a note to view its content</p>
                   </div>
                 </div>
-              ))}
+              )}
             </div>
-            {note.lastSync && (
-              <div className="mt-4 pt-4 border-t text-xs text-gray-500">
-                Last synced: {new Date(note.lastSync).toLocaleString()}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

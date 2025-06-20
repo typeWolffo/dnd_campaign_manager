@@ -1,8 +1,9 @@
-// Simple in-memory connection store that can be accessed from other modules
-const connections = new Map<string, { ws: any; info: { roomId: string } }>();
+import type { TypedWebSocketMessage } from "../schemas/websocket";
+
+const connections = new Map<string, { ws: unknown; info: { roomId: string } }>();
 const roomConnections = new Map<string, Set<string>>();
 
-export const addConnection = (connectionId: string, ws: any, roomId: string) => {
+export const addConnection = (connectionId: string, ws: unknown, roomId: string) => {
   connections.set(connectionId, { ws, info: { roomId } });
 
   if (!roomConnections.has(roomId)) {
@@ -20,7 +21,7 @@ export const removeConnection = (connectionId: string) => {
   }
 };
 
-export const broadcastToRoom = (roomId: string, message: any, excludeConnectionId?: string) => {
+export const broadcastToRoom = (roomId: string, message: TypedWebSocketMessage, excludeConnectionId?: string) => {
   const roomConns = roomConnections.get(roomId);
   if (!roomConns) {
     console.log(`No connections found for room ${roomId}`);
@@ -36,7 +37,7 @@ export const broadcastToRoom = (roomId: string, message: any, excludeConnectionI
     const connection = connections.get(connectionId);
     if (connection) {
       try {
-        connection.ws.send(messageStr);
+        (connection.ws as { send: (data: string) => void }).send(messageStr);
         sentCount++;
       } catch (error) {
         console.error("Failed to send message to connection:", error);

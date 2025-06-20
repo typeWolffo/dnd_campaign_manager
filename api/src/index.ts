@@ -72,11 +72,13 @@ const app = new Elysia({ prefix: "/api" })
   })
   .listen({
     port: parseInt(process.env.PORT || '4000'),
-    hostname: process.env.NODE_ENV === 'production' ? '0.0.0.0' : undefined,
+    hostname: '0.0.0.0',
     reusePort: true,
   });
 
 console.log("🦊 Elysia is running at", `${app.server?.hostname}:${app.server?.port}`);
 console.log("🔍 Available routes should include /api/auth/* endpoints");
+console.log("🌍 NODE_ENV:", process.env.NODE_ENV);
+console.log("🌍 PORT:", process.env.PORT || '4000');
 
 export type App = typeof app;

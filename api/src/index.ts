@@ -66,18 +66,17 @@ const app = new Elysia({ prefix: "/api" })
   }).onStart(async () => {
     if(process.env.NODE_ENV === 'production') {
     console.log("🔄 Running database migrations...");
-      await migrate(db, { migrationsFolder: './src/db/drizzle' })
+      await migrate(db, { migrationsFolder: '/app/drizzle' })
       console.log('✅ Migrations completed successfully')
     }
   })
   .listen({
     port: parseInt(process.env.PORT || '4000'),
-    hostname: process.env.NODE_ENV === 'production' ? '0.0.0.0' : undefined
+    hostname: process.env.NODE_ENV === 'production' ? '0.0.0.0' : undefined,
+    reusePort: true,
   });
 
 console.log("🦊 Elysia is running at", `${app.server?.hostname}:${app.server?.port}`);
 console.log("🔍 Available routes should include /api/auth/* endpoints");
-
-export default app;
 
 export type App = typeof app;

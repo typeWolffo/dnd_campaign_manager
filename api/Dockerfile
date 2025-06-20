@@ -9,6 +9,7 @@ COPY bun.lock bun.lock
 RUN bun install
 
 COPY ./src ./src
+COPY ./drizzle.config.ts ./drizzle.config.ts
 
 ENV NODE_ENV=production
 
@@ -25,6 +26,7 @@ FROM gcr.io/distroless/base
 WORKDIR /app
 
 COPY --from=build /app/server server
+COPY --from=build /app/src/db/drizzle ./drizzle
 
 ENV NODE_ENV=production
 

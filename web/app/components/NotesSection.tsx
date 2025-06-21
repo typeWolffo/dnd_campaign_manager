@@ -189,7 +189,7 @@ export function NotesSection({ roomId, isGM }: NotesSectionProps) {
           <CardDescription>Published notes from your Obsidian vault</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 h-[600px]">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 md:h-[600px] h-[800px]">
             {/* Files Explorer */}
             <div className="border-r">
               <Files className="border-0 rounded-none h-full bg-transparent">

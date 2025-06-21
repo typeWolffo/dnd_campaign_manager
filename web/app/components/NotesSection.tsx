@@ -1,8 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { useRoomNotes } from "../lib/api-hooks";
 import { Clock, FileText } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo, type ReactNode } from "react";
 import { Files, Folder, File } from "./animate-ui/components/files";
+import { cn } from "~/lib/utils";
 
 interface NoteSection {
   id?: string;
@@ -21,25 +22,33 @@ interface Note {
   sections: NoteSection[];
 }
 
+interface NoteWithFileName extends Note {
+  fileName: string;
+}
+
+interface FolderStructure {
+  _files?: NoteWithFileName[];
+  [folderName: string]: FolderStructure | NoteWithFileName[] | undefined;
+}
+
 interface NotesSectionProps {
   roomId: string;
   isGM: boolean;
 }
 
-// Helper to build folder structure from notes
-const buildFolderStructure = (notes: Note[]) => {
-  const structure: Record<string, any> = {};
+const buildFolderStructure = (notes: Note[]): FolderStructure => {
+  const structure: FolderStructure = {};
 
   notes.forEach(note => {
     const pathParts = note.obsidianPath.split("/");
     const fileName = pathParts.pop() || note.title;
 
-    let current = structure;
+    let current: FolderStructure = structure;
     pathParts.forEach(folder => {
       if (!current[folder]) {
         current[folder] = {};
       }
-      current = current[folder];
+      current = current[folder] as FolderStructure;
     });
 
     if (!current._files) {
@@ -51,43 +60,72 @@ const buildFolderStructure = (notes: Note[]) => {
   return structure;
 };
 
-// Render folder structure recursively
+const isFolderStructure = (
+  value: FolderStructure[keyof FolderStructure]
+): value is FolderStructure => {
+  return typeof value === "object" && !Array.isArray(value) && value !== undefined;
+};
+
+const isFileArray = (
+  value: FolderStructure[keyof FolderStructure]
+): value is NoteWithFileName[] => {
+  return Array.isArray(value);
+};
+
 const renderFolderStructure = (
-  structure: Record<string, any>,
+  structure: FolderStructure,
   selectedNote: Note | null,
   onNoteSelect: (note: Note) => void,
   path = ""
-) => {
-  return Object.entries(structure).map(([key, value]) => {
-    if (key === "_files") {
-      return value.map((note: Note & { fileName: string }) => (
-        <File
-          key={note.id}
-          name={note.fileName.replace(".md", "")}
-          className={selectedNote?.id === note.id ? "bg-primary/10" : ""}
-          onClick={() => onNoteSelect(note)}
-          sideComponent={
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Clock className="h-3 w-3" />
-              {new Date(note.updatedAt).toLocaleDateString()}
-            </div>
-          }
-        />
-      ));
-    }
+): ReactNode[] => {
+  const elements: ReactNode[] = [];
 
-    const folderPath = path ? `${path}/${key}` : key;
-    return (
-      <Folder key={folderPath} name={key}>
-        {renderFolderStructure(value, selectedNote, onNoteSelect, folderPath)}
-      </Folder>
-    );
+  Object.entries(structure).forEach(([key, value]) => {
+    if (key === "_files" && isFileArray(value)) {
+      value.forEach((note: NoteWithFileName) => {
+        elements.push(
+          <File
+            key={note.id}
+            name={note.fileName.replace(".md", "")}
+            className={cn({
+              "bg-primary/10": selectedNote?.id === note.id,
+            })}
+            onClick={() => onNoteSelect(note)}
+            sideComponent={
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Clock className="h-3 w-3" />
+                {new Date(note.updatedAt).toLocaleDateString()}
+              </div>
+            }
+          />
+        );
+      });
+    } else if (key !== "_files" && isFolderStructure(value)) {
+      const folderPath = path ? `${path}/${key}` : key;
+      elements.push(
+        <Folder key={folderPath} name={key}>
+          {renderFolderStructure(value, selectedNote, onNoteSelect, folderPath)}
+        </Folder>
+      );
+    }
   });
+
+  return elements;
 };
 
 export function NotesSection({ roomId, isGM }: NotesSectionProps) {
   const { data: notes, isLoading, error } = useRoomNotes(roomId);
-  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+
+  const selectedNote = useMemo((): Note | null => {
+    if (!selectedNoteId || !notes) return null;
+    return notes.find(note => note.id === selectedNoteId) || null;
+  }, [selectedNoteId, notes]);
+
+  const folderStructure = useMemo((): FolderStructure => {
+    if (!notes || notes.length === 0) return {};
+    return buildFolderStructure(notes);
+  }, [notes]);
 
   if (isLoading) {
     return (
@@ -143,8 +181,6 @@ export function NotesSection({ roomId, isGM }: NotesSectionProps) {
     );
   }
 
-  const folderStructure = buildFolderStructure(notes);
-
   return (
     <div className="space-y-6">
       <Card>
@@ -156,8 +192,10 @@ export function NotesSection({ roomId, isGM }: NotesSectionProps) {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 h-[600px]">
             {/* Files Explorer */}
             <div className="border-r">
-              <Files className="border-0 rounded-none h-full">
-                {renderFolderStructure(folderStructure, selectedNote, setSelectedNote)}
+              <Files className="border-0 rounded-none h-full bg-transparent">
+                {renderFolderStructure(folderStructure, selectedNote, (note: Note) =>
+                  setSelectedNoteId(note.id)
+                )}
               </Files>
             </div>
 

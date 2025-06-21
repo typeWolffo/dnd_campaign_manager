@@ -45,21 +45,19 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow">
+      <header className="bg-card shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                D&D Campaign Manager
-              </h1>
+            <div className="hidden md:flex items-center">
+              <h1 className="text-2xl font-bold text-foreground">D&D Campaign Manager</h1>
             </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-700 dark:text-gray-300">
+            <div className="flex items-center space-x-4 justify-between grow md:grow-0">
+              <span className="text-sm text-muted-foreground">
                 Welcome, {session.user.name || session.user.email}!
               </span>
-              <Button variant="outline" onClick={handleSignOut}>
+              <Button variant="secondary" onClick={handleSignOut}>
                 Sign out
               </Button>
             </div>
@@ -98,13 +96,9 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 {roomsLoading ? (
-                  <div className="text-center py-4 text-gray-500">
-                    Loading campaigns...
-                  </div>
+                  <div className="text-center py-4 text-gray-500">Loading campaigns...</div>
                 ) : roomsError ? (
-                  <div className="text-center py-4 text-red-500">
-                    Failed to load campaigns
-                  </div>
+                  <div className="text-center py-4 text-red-500">Failed to load campaigns</div>
                 ) : !rooms || rooms.length === 0 ? (
                   <div className="text-center py-4 text-gray-500">
                     No campaigns yet. Create your first campaign to get started!
@@ -119,28 +113,8 @@ export default function Dashboard() {
                 </CreateRoomDialog>
               </CardContent>
             </Card>
-
-            {/* Quick Actions Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
-                <CardDescription>Common tasks and shortcuts</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button variant="outline" className="w-full">
-                  Join Campaign
-                </Button>
-                <Button variant="outline" className="w-full">
-                  View Invitations
-                </Button>
-                <Button variant="outline" className="w-full">
-                  Obsidian Settings
-                </Button>
-              </CardContent>
-            </Card>
           </div>
 
-          {/* All Campaigns */}
           {rooms && rooms.length > 0 && (
             <div className="mt-6">
               <div className="mb-4">
@@ -148,7 +122,7 @@ export default function Dashboard() {
                 <p className="text-gray-600">Manage your campaigns and view details</p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {rooms.map((room) => (
+                {rooms.map(room => (
                   <RoomCard
                     key={room.id}
                     room={room}
@@ -159,19 +133,6 @@ export default function Dashboard() {
               </div>
             </div>
           )}
-
-          {/* Recent Activity */}
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
-              <CardDescription>Your latest campaign updates and notes</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-gray-500">
-                No recent activity. Start creating campaigns and notes to see updates here!
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </main>
     </div>

@@ -1,15 +1,13 @@
-import { useNavigate, Link, redirect, useLoaderData } from "react-router";
-import { useSession } from "../lib/auth-client";
-import { useRoom, useRemoveMember } from "../lib/api-hooks";
-import { useRoomWebSocket } from "../lib/use-websocket";
-import { Button } from "../components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
-import { Avatar, AvatarFallback } from "../components/ui/avatar";
+import { Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link, redirect, useLoaderData, useNavigate } from "react-router";
+import { cn } from "~/lib/utils";
 import { AddMemberDialog } from "../components/AddMemberDialog";
 import { NotesSection } from "../components/NotesSection";
-import { useEffect, useState } from "react";
-import { Trash2, Wifi, WifiOff } from "lucide-react";
+import { Avatar, AvatarFallback } from "../components/ui/avatar";
+import { Badge } from "../components/ui/badge";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +16,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../components/ui/dialog";
+import { useRemoveMember, useRoom } from "../lib/api-hooks";
+import { useSession } from "../lib/auth-client";
+import { useRoomWebSocket } from "../lib/use-websocket";
 import type { Route } from "./+types/room-details";
 
 export const clientLoader = async ({ params }: Route.ClientLoaderArgs) => {
@@ -56,6 +57,7 @@ export default function RoomDetails() {
   }
 
   if (roomError || !room) {
+    console.error(roomError);
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card className="w-full max-w-md">
@@ -89,29 +91,32 @@ export default function RoomDetails() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow">
+      <header className="bg-card shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center space-x-4">
-              <Button variant="outline" asChild>
+              <Button variant="secondary" asChild>
                 <Link to="/dashboard">← Back</Link>
               </Button>
-              <div>
+              <div className="flex items-center gap-4">
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{room.name}</h1>
                 <div className="flex items-center gap-2">
                   <Badge variant={isGM ? "default" : "secondary"}>
                     {isGM ? "Game Master" : "Player"}
                   </Badge>
-                  <Badge
-                    variant={isConnected ? "default" : "secondary"}
-                    className="flex items-center gap-1"
-                  >
-                    {isConnected ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
-                    {wsStatus}
-                  </Badge>
                 </div>
+                <div
+                  className={cn("h-1.5 w-1.5 rounded-full relative", {
+                    "bg-green-500 before:absolute before:inset-0 before:bg-green-500 before:rounded-full before:animate-ping before:scale-125 before:duration-2000":
+                      isConnected,
+                    "bg-red-500 before:absolute before:inset-0 before:bg-red-500 before:rounded-full before:animate-ping before:scale-125 before:duration-2000":
+                      !isConnected,
+                    "bg-yellow-400 before:absolute before:inset-0 before:bg-yellow-400 before:rounded-full before:animate-ping before:duration-2000":
+                      wsStatus === "connecting",
+                  })}
+                />
               </div>
             </div>
           </div>
@@ -119,7 +124,7 @@ export default function RoomDetails() {
       </header>
 
       {/* Main content */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 rounded-t-2xl h-full">
         <div className="px-4 py-6 sm:px-0">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Room Info */}

@@ -52,7 +52,28 @@ export const roomsRouter = new Elysia({ prefix: "/rooms" })
         )
       );
 
-    const userRooms = [...gmRooms, ...memberRooms];
+        const allRooms = [...gmRooms, ...memberRooms];
+
+    const roomIds = allRooms.map(room => room.id);
+
+    const allMembers = roomIds.length > 0 ? await db
+      .select({
+        roomId: roomMembers.roomId,
+        id: roomMembers.id,
+        userId: roomMembers.userId,
+        role: roomMembers.role,
+        joinedAt: roomMembers.joinedAt,
+        userName: users.name,
+        userEmail: users.email,
+      })
+      .from(roomMembers)
+      .innerJoin(users, eq(users.id, roomMembers.userId))
+      .where(or(...roomIds.map(id => eq(roomMembers.roomId, id)))) : [];
+
+    const userRooms = allRooms.map(room => ({
+      ...room,
+      members: allMembers.filter(member => member.roomId === room.id)
+    }));
 
     return userRooms;
   })

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { UserPlus, Check } from "lucide-react";
+import { UserPlus, Check, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { Button } from "./ui/button";
 import {
@@ -67,7 +67,7 @@ export function AddMemberDialog({ roomId, existingMembers }: AddMemberDialogProp
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button variant="default" size="lg">
           <UserPlus className="h-4 w-4 mr-2" />
           Add Member
         </Button>
@@ -91,7 +91,7 @@ export function AddMemberDialog({ roomId, existingMembers }: AddMemberDialogProp
                   <CommandItem
                     key={user.id}
                     onSelect={() => handleSelectUser(user.id)}
-                    className="cursor-pointer"
+                    className="cursor-pointer data-[selected=true]:bg-secondary"
                   >
                     <Avatar className="h-8 w-8 mr-2">
                       <AvatarFallback>{user.email.slice(0, 2).toUpperCase()}</AvatarFallback>
@@ -107,18 +107,18 @@ export function AddMemberDialog({ roomId, existingMembers }: AddMemberDialogProp
           </Command>
 
           {selectedUsers.length > 0 && (
-            <div className="space-y-2 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <div className="space-y-2 p-4 bg-card rounded-lg">
               <p className="text-sm font-medium">Selected members:</p>
               <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto">
                 {selectedUsers.map(user => (
                   <Badge
                     key={user.id}
                     variant="secondary"
-                    className="cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-600"
+                    className="cursor-pointer hover:bg-secondary px-2 py-1"
                     onClick={() => handleRemoveUser(user.id)}
                   >
                     {user.name || user.email}
-                    <span className="ml-1 text-xs">×</span>
+                    <X className="h-4 w-4" />
                   </Badge>
                 ))}
               </div>

@@ -15,15 +15,15 @@ export default function Home() {
   const { data: session } = useSession();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-background/95">
       <div className="container mx-auto px-4 py-16">
         {/* Hero Section */}
         <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">
+          <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6">
             D&D Campaign Manager
           </h1>
 
-          <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
             Create immersive D&D campaigns with seamless Obsidian integration. Share your
             world-building notes with players while keeping secrets hidden.
           </p>
@@ -47,16 +47,18 @@ export default function Home() {
         </div>
 
         {/* Features */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">🎲 Campaign Rooms</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-foreground">
+                🎲 Campaign Rooms
+              </CardTitle>
               <CardDescription>
                 Create private rooms for your campaigns and invite players via email
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
+              <p className="text-sm text-muted-foreground">
                 Organize your campaigns with dedicated spaces for each adventure. Manage player
                 access and permissions easily.
               </p>
@@ -65,19 +67,21 @@ export default function Home() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">📝 Obsidian Integration</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-foreground">
+                📝 Obsidian Integration
+              </CardTitle>
               <CardDescription>
                 Publish portions of your notes using [PUBLIC] markers
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
+              <p className="text-sm text-muted-foreground">
                 Keep your DM secrets while sharing world lore, NPCs, and locations with your players
                 seamlessly.
               </p>
             </CardContent>
           </Card>
-
+          {/*
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">👥 Player Management</CardTitle>
@@ -89,7 +93,7 @@ export default function Home() {
                 remote campaigns.
               </p>
             </CardContent>
-          </Card>
+          </Card> */}
         </div>
 
         {/* Call to Action */}

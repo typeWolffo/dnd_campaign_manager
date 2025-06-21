@@ -3,14 +3,15 @@ import { Badge } from "./ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { useDeleteRoom } from "../lib/api-hooks";
+import { cn } from "~/lib/utils";
 
 interface Room {
   id: string;
   name: string;
   description?: string | null;
-  gmId: string;
-  createdAt: string;
-  updatedAt: string;
+  gmId: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
   role?: string | null;
   isGM?: boolean;
   members?: Array<{
@@ -34,7 +35,11 @@ export function RoomCard({ room, currentUserId, onViewDetails }: RoomCardProps) 
   const isGM = room.gmId === currentUserId;
 
   const handleDelete = async () => {
-    if (window.confirm(`Are you sure you want to delete "${room.name}"? This action cannot be undone.`)) {
+    if (
+      window.confirm(
+        `Are you sure you want to delete "${room.name}"? This action cannot be undone.`
+      )
+    ) {
       try {
         await deleteRoom.mutateAsync(room.id);
       } catch (error) {
@@ -44,7 +49,6 @@ export function RoomCard({ room, currentUserId, onViewDetails }: RoomCardProps) 
   };
 
   const memberCount = room.members?.length || 0;
-  const playerCount = room.members?.filter(m => m.role === "player").length || 0;
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -53,9 +57,7 @@ export function RoomCard({ room, currentUserId, onViewDetails }: RoomCardProps) 
           <div className="space-y-1 flex-1">
             <CardTitle className="text-lg">{room.name}</CardTitle>
             {room.description && (
-              <CardDescription className="line-clamp-2">
-                {room.description}
-              </CardDescription>
+              <CardDescription className="line-clamp-2">{room.description}</CardDescription>
             )}
           </div>
           <Badge variant={isGM ? "default" : "secondary"} className="ml-2">
@@ -69,9 +71,19 @@ export function RoomCard({ room, currentUserId, onViewDetails }: RoomCardProps) 
           {/* Members preview */}
           <div className="flex items-center space-x-2">
             <div className="flex -space-x-2">
-              {room.members?.slice(0, 3).map((member) => (
-                <Avatar key={member.id} className="h-6 w-6 border-2 border-background">
-                  <AvatarFallback className="text-xs">
+              {room.members?.slice(0, 3).map(member => (
+                <Avatar
+                  key={member.id}
+                  className={cn("h-8 w-8 border-2 border-background", {
+                    "bg-accent before:absolute before:inset-0 before:animate-ping before:rounded-full before:bg-accent/50":
+                      member.role === "gm",
+                  })}
+                >
+                  <AvatarFallback
+                    className={cn("text-xs relative", {
+                      "bg-primary": member.role === "gm",
+                    })}
+                  >
                     {(member.userName || member.userEmail).charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
@@ -83,7 +95,7 @@ export function RoomCard({ room, currentUserId, onViewDetails }: RoomCardProps) 
               )}
             </div>
             <span className="text-sm text-muted-foreground">
-              {playerCount} player{playerCount !== 1 ? "s" : ""}
+              {memberCount} player{memberCount !== 1 ? "s" : ""}
             </span>
           </div>
 
@@ -94,11 +106,7 @@ export function RoomCard({ room, currentUserId, onViewDetails }: RoomCardProps) 
             </span>
 
             <div className="flex space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onViewDetails(room.id)}
-              >
+              <Button variant="outline" size="sm" onClick={() => onViewDetails(room.id)}>
                 View Details
               </Button>
               {isGM && (

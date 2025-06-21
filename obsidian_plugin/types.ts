@@ -36,12 +36,23 @@ export interface NoteSection {
 export interface CreateNotePayload {
   title: string;
   obsidianPath?: string;
+  contentHash?: string;
   sections: NoteSection[];
 }
 
 export interface ParsedNote {
   title: string;
   sections: NoteSection[];
+}
+
+export interface PublishedNote {
+  id: string;
+  title: string;
+  obsidianPath?: string;
+  contentHash?: string;
+  sections: NoteSection[];
+  updatedAt: string;
+  createdAt: string;
 }
 
 export interface PublishResult {

@@ -1,7 +1,7 @@
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
 import { CampaignAPI } from './auth';
 import { NoteParser } from './parser';
-import { CampaignSettings, Room, DEFAULT_SETTINGS } from './types';
+import { CampaignSettings, Room, DEFAULT_SETTINGS, PublishedNote } from './types';
 
 export default class CampaignManagerPlugin extends Plugin {
 	settings: CampaignSettings;
@@ -29,6 +29,40 @@ export default class CampaignManagerPlugin extends Plugin {
 			name: 'Preview public content',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				this.previewPublicContent(editor, view);
+			}
+		});
+
+		// New commands for PUBLIC block management
+		this.addCommand({
+			id: 'insert-public-block',
+			name: 'Insert PUBLIC block',
+			editorCallback: (editor: Editor) => {
+				const cursor = editor.getCursor();
+				editor.replaceRange('\n[PUBLIC]\n\n[!PUBLIC]\n', cursor);
+				// Position cursor between the markers
+				editor.setCursor(cursor.line + 2, 0);
+			}
+		});
+
+		this.addCommand({
+			id: 'wrap-selection-public',
+			name: 'Wrap selection in PUBLIC block',
+			editorCallback: (editor: Editor) => {
+				const selection = editor.getSelection();
+				if (selection) {
+					const replacement = `[PUBLIC]\n${selection}\n[!PUBLIC]`;
+					editor.replaceSelection(replacement);
+				} else {
+					new Notice('No text selected');
+				}
+			}
+		});
+
+		this.addCommand({
+			id: 'view-published-notes',
+			name: 'View published notes',
+			callback: async () => {
+				await this.viewPublishedNotes();
 			}
 		});
 
@@ -78,16 +112,43 @@ export default class CampaignManagerPlugin extends Plugin {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	private async doPublish(file: TFile, parsed: any): Promise<void> {
 		try {
+			const contentHash = await this.getFileHash(file);
+
+			// Check for existing notes with same content hash (moved files)
+			const existingNotes = await this.api.getPublishedNotes(this.settings.selectedRoomId);
+
+			const duplicates = existingNotes.filter(note => {
+				// Primary check: contentHash (if backend supports it)
+				if (note.contentHash && contentHash) {
+					return note.contentHash === contentHash && note.obsidianPath !== file.path;
+				}
+				// Fallback: same title but different path (likely moved file)
+				return note.title === parsed.title && note.obsidianPath !== file.path;
+			});
+
+			// Remove duplicates (old locations of moved files)
+			for (const duplicate of duplicates) {
+				try {
+					await this.api.deleteNote(this.settings.selectedRoomId, duplicate.id);
+				} catch (error) {
+					new Notice(`Failed to remove duplicate: ${error.message}`);
+				}
+			}
+
 			const noteData = {
 				title: parsed.title,
 				obsidianPath: file.path,
+				contentHash,
 				sections: parsed.sections,
 			};
 
 			const result = await this.api.publishNote(this.settings.selectedRoomId, noteData);
 
 			if (result.created) {
-				new Notice(`Note "${parsed.title}" published successfully!`);
+				const message = duplicates.length > 0
+					? `Note "${parsed.title}" published successfully! (Removed ${duplicates.length} duplicate${duplicates.length > 1 ? 's' : ''})`
+					: `Note "${parsed.title}" published successfully!`;
+				new Notice(message);
 			} else if (result.updated) {
 				new Notice(`Note "${parsed.title}" updated successfully!`);
 			}
@@ -97,11 +158,43 @@ export default class CampaignManagerPlugin extends Plugin {
 		}
 	}
 
+	private async getFileHash(file: TFile): Promise<string> {
+		const content = await this.app.vault.read(file);
+		// More robust hash based on content and title
+		const hashInput = content + '|' + file.basename;
+		const hash = this.simpleHash(hashInput);
+		return hash;
+	}
+
+	private simpleHash(str: string): string {
+		let hash = 0;
+		for (let i = 0; i < str.length; i++) {
+			const char = str.charCodeAt(i);
+			hash = ((hash << 5) - hash) + char;
+			hash = hash & hash; // Convert to 32bit integer
+		}
+		return Math.abs(hash).toString(36);
+	}
+
 	private previewPublicContent(editor: Editor, view: MarkdownView): void {
 		const content = editor.getValue();
 		const parsed = NoteParser.parseNote(content, view.file?.basename || 'Untitled');
 
 		new PreviewModal(this.app, parsed).open();
+	}
+
+	private async viewPublishedNotes(): Promise<void> {
+		if (!this.settings.selectedRoomId) {
+			new Notice('Please select a room in settings first');
+			return;
+		}
+
+		try {
+			const notes = await this.api.getPublishedNotes(this.settings.selectedRoomId);
+			new PublishedNotesModal(this.app, notes, this).open();
+		} catch (error) {
+			new Notice('Failed to load published notes: ' + error.message);
+		}
 	}
 
 	async loadRooms(): Promise<void> {
@@ -223,6 +316,173 @@ class PreviewModal extends Modal {
 				text: 'No public content found. Use [PUBLIC] markers to mark content for publication.'
 			});
 		}
+	}
+
+	onClose() {
+		const { contentEl } = this;
+		contentEl.empty();
+	}
+}
+
+class PublishedNotesModal extends Modal {
+	private notes: PublishedNote[];
+	private plugin: CampaignManagerPlugin;
+
+	constructor(app: App, notes: PublishedNote[], plugin: CampaignManagerPlugin) {
+		super(app);
+		this.notes = notes;
+		this.plugin = plugin;
+	}
+
+		onOpen() {
+		const { contentEl } = this;
+		contentEl.empty();
+		contentEl.addClass('published-notes-modal');
+
+		contentEl.createEl('h2', { text: 'Published Notes' });
+
+		if (this.notes.length === 0) {
+			contentEl.createEl('p', { text: 'No published notes found in this room.' });
+			return;
+		}
+
+		const notesList = contentEl.createDiv('published-notes-list');
+
+		this.notes.forEach(note => {
+			const noteItem = notesList.createDiv('published-note-item');
+
+			const noteHeader = noteItem.createDiv('note-header');
+			noteHeader.createEl('h3', { text: note.title });
+
+			const noteInfo = noteHeader.createDiv('note-info');
+			noteInfo.createEl('span', {
+				text: `Last updated: ${new Date(note.updatedAt).toLocaleString()}`,
+				cls: 'note-date'
+			});
+
+						if (note.obsidianPath) {
+				const pathEl = noteInfo.createEl('span', {
+					text: note.obsidianPath,
+					cls: 'note-path'
+				});
+				pathEl.onclick = () => {
+					this.openNoteInObsidian(note.obsidianPath!);
+				};
+			}
+
+			const actions = noteItem.createDiv('note-actions');
+
+			const previewBtn = actions.createEl('button', { text: 'Preview' });
+			previewBtn.onclick = () => {
+				this.previewNote(note);
+			};
+
+			const deleteBtn = actions.createEl('button', {
+				text: 'Delete',
+				cls: 'mod-warning'
+			});
+			deleteBtn.onclick = () => {
+				this.deleteNote(note);
+			};
+		});
+	}
+
+	private async openNoteInObsidian(path: string) {
+		const file = this.app.vault.getAbstractFileByPath(path);
+		if (file instanceof TFile) {
+			await this.app.workspace.getLeaf().openFile(file);
+			this.close();
+		} else {
+			new Notice(`File not found: ${path}`);
+		}
+	}
+
+	private previewNote(note: PublishedNote) {
+		const previewModal = new NotePreviewModal(this.app, note);
+		previewModal.open();
+	}
+
+	private async deleteNote(note: PublishedNote) {
+		const confirmed = await this.confirmDelete(note.title);
+		if (confirmed) {
+			try {
+				await this.plugin.api.deleteNote(this.plugin.settings.selectedRoomId, note.id);
+				new Notice(`Note "${note.title}" deleted successfully`);
+				this.close();
+				// Reopen with updated list
+				const notes = await this.plugin.api.getPublishedNotes(this.plugin.settings.selectedRoomId);
+				new PublishedNotesModal(this.plugin.app, notes, this.plugin).open();
+			} catch (error) {
+				new Notice('Failed to delete note: ' + error.message);
+			}
+		}
+	}
+
+	private confirmDelete(title: string): Promise<boolean> {
+		return new Promise((resolve) => {
+			const modal = new Modal(this.app);
+			modal.contentEl.createEl('h3', { text: 'Confirm Delete' });
+			modal.contentEl.createEl('p', { text: `Are you sure you want to delete "${title}"?` });
+
+			const buttonContainer = modal.contentEl.createDiv('modal-button-container');
+
+			const cancelBtn = buttonContainer.createEl('button', { text: 'Cancel' });
+			cancelBtn.onclick = () => {
+				resolve(false);
+				modal.close();
+			};
+
+			const deleteBtn = buttonContainer.createEl('button', {
+				text: 'Delete',
+				cls: 'mod-warning'
+			});
+			deleteBtn.onclick = () => {
+				resolve(true);
+				modal.close();
+			};
+
+			modal.open();
+		});
+	}
+
+	onClose() {
+		const { contentEl } = this;
+		contentEl.empty();
+	}
+}
+
+class NotePreviewModal extends Modal {
+	private note: PublishedNote;
+
+	constructor(app: App, note: PublishedNote) {
+		super(app);
+		this.note = note;
+	}
+
+	onOpen() {
+		const { contentEl } = this;
+		contentEl.empty();
+
+		contentEl.createEl('h2', { text: this.note.title });
+
+		const info = contentEl.createDiv('note-preview-info');
+		info.createEl('p', {
+			text: `Last updated: ${new Date(this.note.updatedAt).toLocaleString()}`
+		});
+
+		if (this.note.obsidianPath) {
+			info.createEl('p', { text: `Path: ${this.note.obsidianPath}` });
+		}
+
+		const content = contentEl.createDiv('note-preview-content');
+
+		this.note.sections.forEach((section: any) => {
+			if (section.isPublic) {
+				const sectionEl = content.createDiv('public-section');
+				const pre = sectionEl.createEl('pre');
+				pre.textContent = section.content;
+			}
+		});
 	}
 
 	onClose() {

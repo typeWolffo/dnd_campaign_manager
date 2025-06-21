@@ -1,5 +1,5 @@
 import { Notice, requestUrl } from 'obsidian';
-import { CampaignSettings, Room } from './types';
+import { CampaignSettings, Room, PublishedNote } from './types';
 
 export class CampaignAPI {
   private settings: CampaignSettings;
@@ -89,6 +89,27 @@ export class CampaignAPI {
       return result;
     } catch (error) {
       new Notice('Failed to publish note: ' + error.message);
+      throw error;
+    }
+  }
+
+  async getPublishedNotes(roomId: string): Promise<PublishedNote[]> {
+    try {
+      const notes = await this.makeRequest(`/rooms/${roomId}/notes`);
+      return notes || [];
+    } catch (error) {
+      new Notice('Failed to fetch published notes: ' + error.message);
+      return [];
+    }
+  }
+
+  async deleteNote(roomId: string, noteId: string): Promise<void> {
+    try {
+      await this.makeRequest(`/rooms/${roomId}/notes/${noteId}`, {
+        method: 'DELETE',
+      });
+    } catch (error) {
+      new Notice('Failed to delete note: ' + error.message);
       throw error;
     }
   }

@@ -119,6 +119,13 @@ export default function Home() {
           </div>
         )}
       </div>
+      <footer className="text-center text-sm text-muted-foreground py-4">
+        <p>
+          <Link to="/faq" className="underline">
+            FAQ
+          </Link>
+        </p>
+      </footer>
     </div>
   );
 }

@@ -1,1 +1,91 @@
-{"theme_color":"#89878c","background_color":"#7a8285","icons":[{"purpose":"maskable","sizes":"512x512","src":"icon512_maskable.png","type":"image/png"},{"purpose":"any","sizes":"512x512","src":"icon512_rounded.png","type":"image/png"}],"orientation":"any","display":"standalone","dir":"auto","lang":"en-GB","name":"DnD Campaign Manager","short_name":"DnD","start_url":"https://dnd.failytales.com/dashboard","scope":"https://dnd.failytales.com/","description":"Pot, łzy i stare skarpetki","id":"https://dnd.failytales.com/"}
+{
+    "name": "D&D Campaign Manager",
+    "short_name": "D&D Manager",
+    "description": "Manage your D&D campaigns with Obsidian integration",
+    "start_url": "/dashboard",
+    "scope": "/",
+    "display": "standalone",
+    "orientation": "any",
+    "theme_color": "#262626",
+    "background_color": "#262626",
+    "lang": "en",
+    "dir": "ltr",
+    "categories": [
+        "games",
+        "productivity",
+        "utilities"
+    ],
+    "icons": [
+        {
+            "src": "/favicon-16x16.png",
+            "sizes": "16x16",
+            "type": "image/png"
+        },
+        {
+            "src": "/favicon-32x32.png",
+            "sizes": "32x32",
+            "type": "image/png"
+        },
+        {
+            "src": "/apple-touch-icon.png",
+            "sizes": "180x180",
+            "type": "image/png"
+        },
+        {
+            "src": "/android-chrome-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/android-chrome-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/icon512_maskable.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "/icon512_rounded.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "Dashboard",
+            "short_name": "Dashboard",
+            "description": "Go to your campaign dashboard",
+            "url": "/dashboard",
+            "icons": [
+                {
+                    "src": "/android-chrome-192x192.png",
+                    "sizes": "192x192"
+                }
+            ]
+        },
+        {
+            "name": "Create Campaign",
+            "short_name": "Create",
+            "description": "Create a new campaign",
+            "url": "/dashboard",
+            "icons": [
+                {
+                    "src": "/android-chrome-192x192.png",
+                    "sizes": "192x192"
+                }
+            ]
+        }
+    ],
+    "display_override": [
+        "window-controls-overlay",
+        "standalone",
+        "minimal-ui"
+    ],
+    "prefer_related_applications": false
+}

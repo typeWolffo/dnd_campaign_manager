@@ -1,0 +1,77 @@
+name: Release Obsidian Plugin
+
+on:
+  push:
+    tags:
+      - 'obsidian-v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release'
+        required: true
+        type: string
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        working-directory: obsidian_plugin
+        run: npm ci
+
+      - name: Build plugin
+        working-directory: obsidian_plugin
+        run: npm run build
+
+      - name: Create release archive
+        working-directory: obsidian_plugin
+        run: |
+          mkdir -p release
+          cp dist/main.js release/
+          cp dist/manifest.json release/
+          cp dist/styles.css release/
+          cd release
+          zip -r ../dnd-campaign-manager-obsidian-plugin.zip .
+
+      - name: Get version from tag
+        id: get_version
+        run: |
+          if [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/obsidian-v}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: obsidian-v${{ steps.get_version.outputs.version }}
+          name: Obsidian Plugin v${{ steps.get_version.outputs.version }}
+          body: |
+            ## D&D Campaign Manager Obsidian Plugin v${{ steps.get_version.outputs.version }}
+
+            ### Installation
+            1. Download `dnd-campaign-manager-obsidian-plugin.zip`
+            2. Extract the files to your vault's `.obsidian/plugins/dnd-campaign-manager/` folder
+            3. Enable the plugin in Obsidian settings
+
+            ### Files included:
+            - `main.js` - Plugin code
+            - `manifest.json` - Plugin manifest
+            - `styles.css` - Plugin styles
+          files: |
+            obsidian_plugin/dnd-campaign-manager-obsidian-plugin.zip
+            obsidian_plugin/dist/main.js
+            obsidian_plugin/dist/manifest.json
+            obsidian_plugin/dist/styles.css
+          draft: false
+          prerelease: false

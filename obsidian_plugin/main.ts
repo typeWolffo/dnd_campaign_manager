@@ -370,19 +370,11 @@ class PublishedNotesModal extends Modal {
 				};
 			}
 
-			const actions = noteItem.createDiv('note-actions');
+						const actions = noteItem.createDiv('note-actions');
 
 			const previewBtn = actions.createEl('button', { text: 'Preview' });
 			previewBtn.onclick = () => {
 				this.previewNote(note);
-			};
-
-			const deleteBtn = actions.createEl('button', {
-				text: 'Delete',
-				cls: 'mod-warning'
-			});
-			deleteBtn.onclick = () => {
-				this.deleteNote(note);
 			};
 		});
 	}
@@ -400,49 +392,6 @@ class PublishedNotesModal extends Modal {
 	private previewNote(note: PublishedNote) {
 		const previewModal = new NotePreviewModal(this.app, note);
 		previewModal.open();
-	}
-
-	private async deleteNote(note: PublishedNote) {
-		const confirmed = await this.confirmDelete(note.title);
-		if (confirmed) {
-			try {
-				await this.plugin.api.deleteNote(this.plugin.settings.selectedRoomId, note.id);
-				new Notice(`Note "${note.title}" deleted successfully`);
-				this.close();
-				// Reopen with updated list
-				const notes = await this.plugin.api.getPublishedNotes(this.plugin.settings.selectedRoomId);
-				new PublishedNotesModal(this.plugin.app, notes, this.plugin).open();
-			} catch (error) {
-				new Notice('Failed to delete note: ' + error.message);
-			}
-		}
-	}
-
-	private confirmDelete(title: string): Promise<boolean> {
-		return new Promise((resolve) => {
-			const modal = new Modal(this.app);
-			modal.contentEl.createEl('h3', { text: 'Confirm Delete' });
-			modal.contentEl.createEl('p', { text: `Are you sure you want to delete "${title}"?` });
-
-			const buttonContainer = modal.contentEl.createDiv('modal-button-container');
-
-			const cancelBtn = buttonContainer.createEl('button', { text: 'Cancel' });
-			cancelBtn.onclick = () => {
-				resolve(false);
-				modal.close();
-			};
-
-			const deleteBtn = buttonContainer.createEl('button', {
-				text: 'Delete',
-				cls: 'mod-warning'
-			});
-			deleteBtn.onclick = () => {
-				resolve(true);
-				modal.close();
-			};
-
-			modal.open();
-		});
 	}
 
 	onClose() {

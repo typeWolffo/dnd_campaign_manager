@@ -113,6 +113,54 @@ const renderFolderStructure = (
   return elements;
 };
 
+const parseObsidianLinks = (
+  content: string,
+  notes: Note[],
+  onNoteSelect: (note: Note) => void
+): ReactNode[] => {
+  const linkRegex = /\[\[([^\]]+)\]\]/g;
+  const parts: ReactNode[] = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = linkRegex.exec(content)) !== null) {
+    // Add text before the link
+    if (match.index > lastIndex) {
+      parts.push(content.slice(lastIndex, match.index));
+    }
+
+    const linkText = match[1];
+    const linkedNote = notes.find(note => note.title === linkText);
+
+    if (linkedNote) {
+      parts.push(
+        <button
+          key={`${match.index}-${linkText}`}
+          onClick={() => onNoteSelect(linkedNote)}
+          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline cursor-pointer bg-transparent border-none p-0 font-inherit"
+        >
+          {linkText}
+        </button>
+      );
+    } else {
+      parts.push(
+        <span key={`${match.index}-${linkText}`} className="text-gray-500 dark:text-gray-400">
+          {linkText}
+        </span>
+      );
+    }
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add remaining text
+  if (lastIndex < content.length) {
+    parts.push(content.slice(lastIndex));
+  }
+
+  return parts;
+};
+
 export function NotesSection({ roomId, isGM }: NotesSectionProps) {
   const { data: notes, isLoading, error } = useRoomNotes(roomId);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
@@ -221,9 +269,11 @@ export function NotesSection({ roomId, isGM }: NotesSectionProps) {
                     {selectedNote.sections?.map((section: NoteSection, index: number) => (
                       <div key={section.id || index} className="relative">
                         <div className="prose prose-sm max-w-none dark:prose-invert">
-                          <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
-                            {section.content}
-                          </pre>
+                          <div className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
+                            {parseObsidianLinks(section.content, notes || [], (note: Note) =>
+                              setSelectedNoteId(note.id)
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}

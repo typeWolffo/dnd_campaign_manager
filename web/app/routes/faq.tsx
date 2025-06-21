@@ -125,7 +125,7 @@ export default function Faq() {
                         &lt;your_vault&gt;/.obsidian/plugins/dnd-campaign-manager/
                       </code>
                     </div>
-                    <div className="mt-3 text-xs sm:text-sm text-muted-foreground space-y-1">
+                    <div className="my-3 text-xs sm:text-sm text-muted-foreground space-y-1">
                       <p>
                         • If the{" "}
                         <code className="bg-muted px-1 rounded text-foreground text-xs break-all">
@@ -141,6 +141,14 @@ export default function Faq() {
                         subfolder
                       </p>
                       <p>• Extract all files from the ZIP into this folder</p>
+                    </div>
+
+                    <div className="w-full space-y-2 sm:space-y-3">
+                      <img
+                        src="/images/3.png"
+                        alt="Obsidian Settings"
+                        className="w-full h-auto rounded object-contain"
+                      />
                     </div>
                   </div>
                 </div>

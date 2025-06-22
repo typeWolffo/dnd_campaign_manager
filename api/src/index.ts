@@ -50,6 +50,7 @@ const app = new Elysia({ prefix: "/api" })
   .use(cors({
     origin: [
      process.env.APP_URL || '',
+     "app://obsidian.md"
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     credentials: true,

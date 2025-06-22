@@ -1,11 +1,13 @@
 import 'dotenv/config';
 import { Elysia } from "elysia";
 import { cors } from "@elysiajs/cors";
+import { initializeBucket } from "./lib/s3-client";
 import { swagger } from "@elysiajs/swagger";
 import { auth } from "./auth/config";
 import { roomsRouter } from "./routes/rooms";
 import { notesRouter } from "./routes/notes";
 import { websocketRouter } from "./routes/websocket";
+import { imagesRouter } from "./routes/images";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { db } from './db/connection';
 
@@ -47,7 +49,7 @@ console.log("🔐 Better Auth middleware created");
 const app = new Elysia({ prefix: "/api" })
   .use(cors({
     origin: [
-     process.env.APP_URL || '', "https://5883-194-33-77-103.ngrok-free.app"
+     process.env.APP_URL || '',
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     credentials: true,
@@ -59,6 +61,7 @@ const app = new Elysia({ prefix: "/api" })
   .use(betterAuth)
   .use(roomsRouter)
   .use(notesRouter)
+  .use(imagesRouter)
   .get("/", () => "D&D Campaign Manager API")
   .get("/health", () => ({ status: "ok", timestamp: new Date().toISOString() }))
   .get("/user", ({ user }) => user, {
@@ -68,6 +71,12 @@ const app = new Elysia({ prefix: "/api" })
     console.log("🔄 Running database migrations...");
       await migrate(db, { migrationsFolder: '/app/drizzle' })
       console.log('✅ Migrations completed successfully')
+    }
+
+    try {
+      await initializeBucket()
+    } catch (error) {
+      console.error('❌ Failed to initialize bucket:', error)
     }
   })
   .listen({

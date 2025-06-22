@@ -47,6 +47,44 @@ export class CampaignAPI {
     }
   }
 
+  private async makeFormDataRequest(path: string, formData: FormData): Promise<any> {
+    const url = `${this.settings.apiUrl}${path}`;
+
+    const headers: HeadersInit = {};
+
+    if (this.sessionCookie) {
+      headers['Cookie'] = this.sessionCookie;
+    }
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers,
+        credentials: 'include',
+      });
+
+      const setCookie = response.headers.get('set-cookie');
+      if (setCookie) {
+        this.sessionCookie = setCookie;
+      }
+
+      new Notice('bbbbbbbbbb ' + response);
+
+      if (!response.ok) {
+        const responseText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${response.statusText} - ${responseText}`);
+      }
+
+      const jsonResponse = await response.json();
+      return jsonResponse;
+    } catch (error) {
+      console.error('FormData request failed:', error);
+      new Notice('aaaaaaaaa ' + error);
+      throw error;
+    }
+  }
+
   async login(): Promise<boolean> {
     try {
       const response = await this.makeRequest('/api/auth/sign-in/email', {
@@ -111,6 +149,19 @@ export class CampaignAPI {
     } catch (error) {
       new Notice('Failed to delete note: ' + error.message);
       throw error;
+    }
+  }
+
+  async uploadImage(roomId: string, noteId: string, formData: FormData): Promise<any> {
+    return await this.makeFormDataRequest(`/images/upload/${roomId}/${noteId}`, formData);
+  }
+
+  async getExistingImages(roomId: string, noteId: string): Promise<any> {
+    try {
+      return await this.makeRequest(`/images/${roomId}/${noteId}`);
+    } catch (error) {
+      // If note doesn't exist yet or no images, return empty array
+      return { images: [] };
     }
   }
 

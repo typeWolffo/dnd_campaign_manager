@@ -1,7 +1,7 @@
-const CACHE_NAME = "dnd-campaign-manager-v1";
+const CACHE_NAME = "dnd-campaign-manager-v2";
 const urlsToCache = ["/", "/dashboard", "/sign-in", "/sign-up", "/manifest.json", "/offline.html"];
 
-// Install event
+// Install event - force immediate activation
 self.addEventListener("install", event => {
   event.waitUntil(
     caches
@@ -10,34 +10,62 @@ self.addEventListener("install", event => {
         console.log("Opened cache");
         return cache.addAll(urlsToCache);
       })
+      .then(() => {
+        // Force the waiting service worker to become the active service worker
+        return self.skipWaiting();
+      })
       .catch(err => {
         console.log("Service Worker cache failed: ", err);
       })
   );
 });
 
-// Fetch event
+// Fetch event with better caching strategy
 self.addEventListener("fetch", event => {
+  // Skip caching for API calls and dynamic content
+  if (
+    event.request.url.includes("/api/") ||
+    event.request.url.includes("hot-update") ||
+    event.request.url.includes("@vite") ||
+    event.request.method !== "GET"
+  ) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then(response => {
-      // Return cached version or fetch from network
+      // For HTML pages, try network first, fallback to cache
+      if (event.request.mode === "navigate") {
+        return fetch(event.request)
+          .then(fetchResponse => {
+            if (fetchResponse && fetchResponse.status === 200) {
+              const responseToCache = fetchResponse.clone();
+              caches.open(CACHE_NAME).then(cache => {
+                cache.put(event.request, responseToCache);
+              });
+              return fetchResponse;
+            }
+            return response || caches.match("/offline.html");
+          })
+          .catch(() => {
+            return response || caches.match("/offline.html");
+          });
+      }
+
+      // For other resources, cache first, then network
       if (response) {
         return response;
       }
 
-      // Clone the request because it's a stream
       const fetchRequest = event.request.clone();
-
       return fetch(fetchRequest)
         .then(response => {
-          // Check if we received a valid response
           if (!response || response.status !== 200 || response.type !== "basic") {
             return response;
           }
 
-          // Clone the response because it's a stream
           const responseToCache = response.clone();
-
           caches.open(CACHE_NAME).then(cache => {
             cache.put(event.request, responseToCache);
           });
@@ -45,7 +73,6 @@ self.addEventListener("fetch", event => {
           return response;
         })
         .catch(() => {
-          // Return offline page for navigation requests
           if (event.request.mode === "navigate") {
             return caches.match("/offline.html");
           }
@@ -54,20 +81,26 @@ self.addEventListener("fetch", event => {
   );
 });
 
-// Activate event
+// Activate event - clean old caches and take control immediately
 self.addEventListener("activate", event => {
   const cacheWhitelist = [CACHE_NAME];
 
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    Promise.all([
+      // Clean old caches
+      caches.keys().then(cacheNames => {
+        return Promise.all(
+          cacheNames.map(cacheName => {
+            if (cacheWhitelist.indexOf(cacheName) === -1) {
+              console.log("Deleting old cache:", cacheName);
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      }),
+      // Take control of all clients immediately
+      self.clients.claim(),
+    ])
   );
 });
 
@@ -112,5 +145,12 @@ self.addEventListener("notificationclick", event => {
 
   if (event.action === "explore") {
     event.waitUntil(clients.openWindow("/dashboard"));
+  }
+});
+
+// Handle messages from main thread
+self.addEventListener("message", event => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
   }
 });

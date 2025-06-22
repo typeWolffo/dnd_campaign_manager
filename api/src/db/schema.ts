@@ -141,6 +141,24 @@ export const noteSections = pgTable(
   ],
 );
 
+export const noteImages = pgTable(
+  "note_images",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    noteId: uuid("note_id").references(() => notes.id, { onDelete: "cascade" }).notNull(),
+    filename: varchar("filename", { length: 255 }).notNull(),
+    originalName: varchar("original_name", { length: 255 }).notNull(),
+    s3Key: varchar("s3_key", { length: 500 }).notNull(),
+    fileSize: integer("file_size").notNull(),
+    mimeType: varchar("mime_type", { length: 100 }).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("note_images_note_id_idx").on(table.noteId),
+    index("note_images_s3_key_idx").on(table.s3Key),
+  ],
+);
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 
@@ -158,3 +176,6 @@ export type NewNote = typeof notes.$inferInsert;
 
 export type NoteSection = typeof noteSections.$inferSelect;
 export type NewNoteSection = typeof noteSections.$inferInsert;
+
+export type NoteImage = typeof noteImages.$inferSelect;
+export type NewNoteImage = typeof noteImages.$inferInsert;

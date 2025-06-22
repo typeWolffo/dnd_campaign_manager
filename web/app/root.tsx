@@ -46,6 +46,9 @@ export function Layout({ children }: { children: ReactNode }) {
         <meta name="theme-color" content="#89878c" />
         <meta name="background-color" content="#7a8285" />
 
+        {/* Version for cache busting */}
+        <meta name="app-version" content={`${Date.now()}`} />
+
         {/* iOS Specific */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />

@@ -1,9 +1,12 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { useRoomNotes } from "../lib/api-hooks";
+import { useRoomNotes, useNoteImages } from "../lib/api-hooks";
 import { Clock, FileText } from "lucide-react";
 import { useState, useMemo, type ReactNode } from "react";
 import { Files, Folder, File } from "./animate-ui/components/files";
 import { cn } from "~/lib/utils";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 
 interface NoteSection {
   id?: string;
@@ -116,59 +119,143 @@ const renderFolderStructure = (
 const parseObsidianLinks = (
   content: string,
   notes: Note[],
-  onNoteSelect: (note: Note) => void
-): ReactNode[] => {
-  const linkRegex = /\[\[([^\]]+)\]\]/g;
-  const parts: ReactNode[] = [];
-  let lastIndex = 0;
-  let match;
-
-  while ((match = linkRegex.exec(content)) !== null) {
-    // Add text before the link
-    if (match.index > lastIndex) {
-      parts.push(content.slice(lastIndex, match.index));
-    }
-
-    const linkText = match[1];
-    const linkedNote = notes.find(note => note.title === linkText);
-
-    if (linkedNote) {
-      parts.push(
-        <button
-          key={`${match.index}-${linkText}`}
-          onClick={() => onNoteSelect(linkedNote)}
-          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline cursor-pointer bg-transparent border-none p-0 font-inherit"
-        >
-          {linkText}
-        </button>
-      );
+  onNoteSelect: (note: Note) => void,
+  images?: { id: string; filename: string; originalName: string; url: string }[]
+): ReactNode => {
+  let processedContent = content.replace(/!\[\[([^\]]+)\]\]/g, (match, imageName) => {
+    const image = images?.find(
+      img =>
+        img.originalName === imageName ||
+        img.filename === imageName ||
+        img.originalName.includes(imageName)
+    );
+    if (image) {
+      return `![${imageName}](${image.url})`;
     } else {
-      parts.push(
-        <span key={`${match.index}-${linkText}`} className="text-gray-500 dark:text-gray-400">
-          {linkText}
-        </span>
+      return `*Image not found: ${imageName}*`;
+    }
+  });
+
+  processedContent = processedContent.replace(/\[\[([^\]]+)\]\]/g, (match, linkText) => {
+    // Check if this is an image link (has image extension)
+    if (/\.(png|jpg|jpeg|gif|webp|svg)$/i.test(linkText)) {
+      const image = images?.find(
+        img =>
+          img.originalName === linkText ||
+          img.filename === linkText ||
+          img.originalName.includes(linkText)
       );
+      if (image) {
+        return `![${linkText}](${image.url})`;
+      } else {
+        return `*Image not found: ${linkText}*`;
+      }
     }
 
-    lastIndex = match.index + match[0].length;
-  }
+    // Otherwise treat as note link
+    const linkedNote = notes.find(note => note.title === linkText);
+    if (linkedNote) {
+      return `[${linkText}](#obsidian-note-${linkedNote.id})`;
+    } else {
+      return `~~${linkText}~~`; // Strikethrough for missing links
+    }
+  });
 
-  // Add remaining text
-  if (lastIndex < content.length) {
-    parts.push(content.slice(lastIndex));
-  }
-
-  return parts;
+  return (
+    <div className="prose prose-sm max-w-none dark:prose-invert">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeRaw]}
+        components={{
+          a: ({ href, children, ...props }) => {
+            if (href?.startsWith("#obsidian-note-")) {
+              const noteId = href.replace("#obsidian-note-", "");
+              const linkedNote = notes.find(note => note.id === noteId);
+              if (linkedNote) {
+                return (
+                  <button
+                    type="button"
+                    onClick={e => {
+                      e.preventDefault();
+                      onNoteSelect(linkedNote);
+                    }}
+                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline cursor-pointer bg-transparent border-none p-0 font-inherit"
+                  >
+                    {children}
+                  </button>
+                );
+              }
+            }
+            return (
+              <a href={href} {...props}>
+                {children}
+              </a>
+            );
+          },
+          img: ({ src, alt, ...props }) => (
+            <img
+              src={src}
+              alt={alt}
+              className="max-w-full h-auto rounded-lg shadow-sm my-4"
+              loading="lazy"
+              onError={e => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = "none";
+              }}
+              {...props}
+            />
+          ),
+          ul: ({ children, ...props }) => (
+            <ul className="list-disc list-inside space-y-1 my-4 pl-4" {...props}>
+              {children}
+            </ul>
+          ),
+          ol: ({ children, ...props }) => (
+            <ol className="list-decimal list-inside space-y-1 my-4 pl-4" {...props}>
+              {children}
+            </ol>
+          ),
+          li: ({ children, ...props }) => (
+            <li className="text-sm leading-relaxed" {...props}>
+              {children}
+            </li>
+          ),
+        }}
+      >
+        {processedContent}
+      </ReactMarkdown>
+    </div>
+  );
 };
 
 export function NotesSection({ roomId, isGM }: NotesSectionProps) {
   const { data: notes, isLoading, error } = useRoomNotes(roomId);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+  const [expandedFolders, setExpandedFolders] = useState<string[]>([]);
 
   const selectedNote = useMemo((): Note | null => {
     if (!selectedNoteId || !notes) return null;
     return notes.find(note => note.id === selectedNoteId) || null;
   }, [selectedNoteId, notes]);
+
+  const { data: selectedNoteImages } = useNoteImages(roomId, selectedNoteId || "");
+
+  // Simple note selection with folder expansion
+  const handleNoteSelect = (note: Note) => {
+    setSelectedNoteId(note.id);
+
+    // Auto-expand folders to show the selected note
+    const pathParts = note.obsidianPath.split("/");
+    pathParts.pop(); // Remove filename
+    const foldersToExpand: string[] = [];
+
+    for (let i = 0; i < pathParts.length; i++) {
+      const cumulativePath = pathParts.slice(0, i + 1).join("/");
+      foldersToExpand.push(cumulativePath);
+    }
+
+    setExpandedFolders(prev => [...new Set([...prev, ...foldersToExpand])]);
+  };
 
   const folderStructure = useMemo((): FolderStructure => {
     if (!notes || notes.length === 0) return {};
@@ -240,9 +327,13 @@ export function NotesSection({ roomId, isGM }: NotesSectionProps) {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 md:h-[600px] h-[800px]">
             {/* Files Explorer */}
             <div className="border-r">
-              <Files className="border-0 rounded-none h-full bg-transparent">
+              <Files
+                className="border-0 rounded-none h-full bg-transparent"
+                open={expandedFolders}
+                onOpenChange={setExpandedFolders}
+              >
                 {renderFolderStructure(folderStructure, selectedNote, (note: Note) =>
-                  setSelectedNoteId(note.id)
+                  handleNoteSelect(note)
                 )}
               </Files>
             </div>
@@ -268,13 +359,12 @@ export function NotesSection({ roomId, isGM }: NotesSectionProps) {
                   <div className="space-y-4">
                     {selectedNote.sections?.map((section: NoteSection, index: number) => (
                       <div key={section.id || index} className="relative">
-                        <div className="prose prose-sm max-w-none dark:prose-invert">
-                          <div className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
-                            {parseObsidianLinks(section.content, notes || [], (note: Note) =>
-                              setSelectedNoteId(note.id)
-                            )}
-                          </div>
-                        </div>
+                        {parseObsidianLinks(
+                          section.content,
+                          notes || [],
+                          (note: Note) => handleNoteSelect(note),
+                          selectedNoteImages?.images
+                        )}
                       </div>
                     ))}
                   </div>

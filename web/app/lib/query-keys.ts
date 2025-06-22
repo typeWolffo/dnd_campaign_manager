@@ -1,4 +1,4 @@
-import { createQueryKeyStore } from '@lukemorales/query-key-factory';
+import { createQueryKeyStore } from "@lukemorales/query-key-factory";
 
 export const queryKeys = createQueryKeyStore({
   auth: {
@@ -17,6 +17,9 @@ export const queryKeys = createQueryKeyStore({
     all: null,
     byRoomId: (roomId: string) => [roomId],
     byId: (id: string) => [id],
+  },
+  images: {
+    byNoteId: (roomId: string, noteId: string) => [roomId, noteId],
   },
   invitations: {
     byRoomId: (roomId: string) => [roomId],

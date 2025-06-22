@@ -124,3 +124,20 @@ export const useRoomNotes = (roomId: string) => {
     enabled: !!roomId,
   });
 };
+
+export const useNoteImages = (roomId: string, noteId: string) => {
+  return useQuery({
+    queryKey: queryKeys.images.byNoteId(roomId, noteId).queryKey,
+    queryFn: async () => {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/images/${roomId}/${noteId}`,
+        {
+          credentials: "include",
+        }
+      );
+      if (!response.ok) throw new Error("Failed to fetch images");
+      return response.json();
+    },
+    enabled: !!roomId && !!noteId,
+  });
+};

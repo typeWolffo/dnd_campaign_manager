@@ -33,6 +33,24 @@ export interface NoteSection {
   orderIndex: number;
 }
 
+export interface ImageReference {
+  localPath: string;
+  altText?: string;
+  type: 'markdown' | 'wikilink'; // ![](path) vs ![[path]]
+  lineNumber: number;
+  isInPublicSection: boolean;
+}
+
+export interface ExistingImage {
+  id: string;
+  filename: string;
+  originalName: string;
+  url: string;
+  size: number;
+  mimeType: string;
+  createdAt: string;
+}
+
 export interface CreateNotePayload {
   title: string;
   obsidianPath?: string;

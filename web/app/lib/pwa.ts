@@ -25,19 +25,31 @@ export const registerServiceWorker = async (): Promise<ServiceWorkerRegistration
 
     console.info("Service Worker registered successfully:", registration);
 
-    // Handle updates
+    // Handle updates - better detection
     registration.addEventListener("updatefound", () => {
       const newWorker = registration.installing;
       if (newWorker) {
         newWorker.addEventListener("statechange", () => {
-          if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-            // New version available
-            console.info("New version available! Please refresh.");
-            showUpdateNotification();
+          if (newWorker.state === "installed") {
+            if (navigator.serviceWorker.controller) {
+              // New version available, show update prompt
+              console.info("New version available!");
+              showUpdatePrompt();
+            } else {
+              // First install
+              console.info("App is ready for offline use");
+            }
           }
         });
       }
     });
+
+    // Check for updates every 30 seconds when app is active
+    setInterval(() => {
+      if (document.visibilityState === "visible") {
+        registration.update();
+      }
+    }, 30000);
 
     return registration;
   } catch (error) {
@@ -62,14 +74,44 @@ export const unregisterServiceWorker = async (): Promise<boolean> => {
   }
 };
 
-const showUpdateNotification = () => {
+const showUpdatePrompt = () => {
+  // Show update notification
   if ("Notification" in window && Notification.permission === "granted") {
     new Notification("D&D Campaign Manager Update", {
-      body: "A new version is available. Please refresh the page.",
+      body: "A new version is available. Click to refresh.",
       icon: "/android-chrome-192x192.png",
       badge: "/favicon-32x32.png",
       tag: "app-update",
     });
+  }
+
+  // Show in-app update prompt
+  const shouldUpdate = confirm(
+    "New version available! Refresh to get the latest features and fixes?"
+  );
+
+  if (shouldUpdate) {
+    // Force refresh to get new version
+    window.location.reload();
+  }
+};
+
+// Force update service worker
+export const forceUpdateServiceWorker = async (): Promise<void> => {
+  if (!isPWASupported()) return;
+
+  try {
+    const registration = await navigator.serviceWorker.ready;
+
+    // Skip waiting and activate new service worker
+    if (registration.waiting) {
+      registration.waiting.postMessage({ type: "SKIP_WAITING" });
+    }
+
+    // Refresh page to use new service worker
+    window.location.reload();
+  } catch (error) {
+    console.error("Force update failed:", error);
   }
 };
 

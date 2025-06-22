@@ -1,7 +1,7 @@
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
 import { CampaignAPI } from './auth';
 import { NoteParser } from './parser';
-import { CampaignSettings, Room, DEFAULT_SETTINGS, PublishedNote } from './types';
+import { CampaignSettings, Room, DEFAULT_SETTINGS, PublishedNote, ImageReference } from './types';
 
 export default class CampaignManagerPlugin extends Plugin {
 	settings: CampaignSettings;
@@ -135,6 +135,7 @@ export default class CampaignManagerPlugin extends Plugin {
 				}
 			}
 
+			// First publish the note WITHOUT images to get the note ID
 			const noteData = {
 				title: parsed.title,
 				obsidianPath: file.path,
@@ -142,15 +143,91 @@ export default class CampaignManagerPlugin extends Plugin {
 				sections: parsed.sections,
 			};
 
-			const result = await this.api.publishNote(this.settings.selectedRoomId, noteData);
+			const publishResult = await this.api.publishNote(this.settings.selectedRoomId, noteData);
+			const noteId = publishResult.id;
 
-			if (result.created) {
+			// Now extract and upload images using the real note ID
+			const content = await this.app.vault.read(file);
+			const publicImages = NoteParser.getPublicImages(content);
+			const imagePathMap = new Map<string, string>();
+
+			// Deduplicate images by path
+			const uniqueImages = new Map<string, ImageReference>();
+			for (const imageRef of publicImages) {
+				uniqueImages.set(imageRef.localPath, imageRef);
+			}
+
+			if (uniqueImages.size > 0) {
+				// Check for existing images in the database
+				const existingImagesResponse = await this.api.getExistingImages(this.settings.selectedRoomId, noteId);
+				const existingImages = existingImagesResponse.images || [];
+
+				// Create a map of original names to URLs for existing images
+				const existingImageMap = new Map<string, string>();
+				for (const img of existingImages) {
+					existingImageMap.set(img.originalName, img.url);
+				}
+
+				const imagesToUpload = new Map<string, ImageReference>();
+
+				// Check each unique image - only upload if not already exists
+				for (const [path, imageRef] of uniqueImages) {
+					// Get the actual filename from the path
+					const filename = path.split('/').pop() || path;
+
+					if (existingImageMap.has(filename)) {
+						// Image already exists, use existing URL
+						imagePathMap.set(path, existingImageMap.get(filename)!);
+					} else {
+						// Image doesn't exist, needs to be uploaded
+						imagesToUpload.set(path, imageRef);
+					}
+				}
+
+				if (imagesToUpload.size > 0) {
+					new Notice(`Uploading ${imagesToUpload.size} new image(s)...`);
+
+					for (const [path, imageRef] of imagesToUpload) {
+						try {
+							const uploadedUrl = await this.uploadImage(imageRef, file, noteId);
+							if (uploadedUrl) {
+								imagePathMap.set(path, uploadedUrl);
+							}
+						} catch (error) {
+							console.log(`Failed to upload image ${path}: ${error.message}`);
+						}
+					}
+				} else {
+					new Notice('All images already exist, reusing existing URLs...');
+				}
+
+				// If any images were processed, update the note content with URLs
+				if (imagePathMap.size > 0) {
+					let updatedContent = content;
+					updatedContent = NoteParser.replaceImagePathsInContent(content, imagePathMap);
+
+					// Re-parse with updated content and update the note
+					const finalParsed = NoteParser.parseNote(updatedContent, parsed.title);
+					const updatedNoteData = {
+						title: finalParsed.title,
+						obsidianPath: file.path,
+						contentHash,
+						sections: finalParsed.sections,
+					};
+
+					await this.api.publishNote(this.settings.selectedRoomId, updatedNoteData);
+				}
+			}
+
+			if (publishResult.created) {
+				const imageMsg = imagePathMap.size > 0 ? ` (${imagePathMap.size} images uploaded)` : '';
 				const message = duplicates.length > 0
-					? `Note "${parsed.title}" published successfully! (Removed ${duplicates.length} duplicate${duplicates.length > 1 ? 's' : ''})`
-					: `Note "${parsed.title}" published successfully!`;
+					? `Note "${parsed.title}" published successfully! (Removed ${duplicates.length} duplicate${duplicates.length > 1 ? 's' : ''})${imageMsg}`
+					: `Note "${parsed.title}" published successfully!${imageMsg}`;
 				new Notice(message);
-			} else if (result.updated) {
-				new Notice(`Note "${parsed.title}" updated successfully!`);
+			} else if (publishResult.updated) {
+				const imageMsg = imagePathMap.size > 0 ? ` (${imagePathMap.size} images uploaded)` : '';
+				new Notice(`Note "${parsed.title}" updated successfully!${imageMsg}`);
 			}
 
 		} catch (error) {
@@ -174,6 +251,54 @@ export default class CampaignManagerPlugin extends Plugin {
 			hash = hash & hash; // Convert to 32bit integer
 		}
 		return Math.abs(hash).toString(36);
+	}
+
+		private async uploadImage(imageRef: ImageReference, noteFile: TFile, noteId: string): Promise<string | null> {
+		try {
+			// Resolve image path relative to the note
+			const imageFile = this.app.metadataCache.getFirstLinkpathDest(imageRef.localPath, noteFile.path);
+			if (!imageFile) {
+				throw new Error(`Image file not found: ${imageRef.localPath}`);
+			}
+
+			// Read image file
+			const imageBuffer = await this.app.vault.readBinary(imageFile);
+
+			// Create form data for upload
+			const formData = new FormData();
+			const blob = new Blob([imageBuffer], { type: this.getMimeType(imageFile.extension) });
+			formData.append('files', blob, imageFile.name);
+
+			// Upload to API
+			const response = await this.api.uploadImage(
+				this.settings.selectedRoomId,
+				noteId,
+				formData
+			);
+
+			if (response.success && response.images?.length > 0) {
+				return response.images[0].url;
+			}
+
+			return null;
+		} catch (error) {
+			console.error('Failed to upload image:', error);
+			throw error;
+		}
+	}
+
+	private getMimeType(extension: string): string {
+		const mimeTypes: Record<string, string> = {
+			'jpg': 'image/jpeg',
+			'jpeg': 'image/jpeg',
+			'png': 'image/png',
+			'gif': 'image/gif',
+			'bmp': 'image/bmp',
+			'svg': 'image/svg+xml',
+			'webp': 'image/webp',
+			'tiff': 'image/tiff',
+		};
+		return mimeTypes[extension.toLowerCase()] || 'application/octet-stream';
 	}
 
 	private previewPublicContent(editor: Editor, view: MarkdownView): void {

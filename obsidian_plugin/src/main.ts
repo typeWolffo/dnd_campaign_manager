@@ -1,7 +1,7 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
+import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TFile, normalizePath } from 'obsidian';
 import { CampaignAPI } from './auth';
 import { NoteParser } from './parser';
-import { CampaignSettings, Room, DEFAULT_SETTINGS, PublishedNote, ImageReference } from './types';
+import { CampaignSettings, Room, DEFAULT_SETTINGS, PublishedNote, ImageReference, ParsedNote } from './types';
 
 export default class CampaignManagerPlugin extends Plugin {
 	settings: CampaignSettings;
@@ -12,6 +12,15 @@ export default class CampaignManagerPlugin extends Plugin {
 		await this.loadSettings();
 		this.api = new CampaignAPI(this.settings);
 
+		if (!this.settings.privacyConsentGiven) {
+			new PrivacyConsentModal(this.app, this).open();
+			return;
+		}
+
+		await this.start();
+	}
+
+	async start() {
 		this.addRibbonIcon('upload', 'Publish to Campaign', async () => {
 			await this.publishCurrentNote();
 		});
@@ -32,14 +41,12 @@ export default class CampaignManagerPlugin extends Plugin {
 			}
 		});
 
-		// New commands for PUBLIC block management
 		this.addCommand({
 			id: 'insert-public-block',
 			name: 'Insert PUBLIC block',
 			editorCallback: (editor: Editor) => {
 				const cursor = editor.getCursor();
 				editor.replaceRange('\n[PUBLIC]\n\n[!PUBLIC]\n', cursor);
-				// Position cursor between the markers
 				editor.setCursor(cursor.line + 2, 0);
 			}
 		});
@@ -68,7 +75,7 @@ export default class CampaignManagerPlugin extends Plugin {
 
 		this.addSettingTab(new CampaignSettingTab(this.app, this));
 
-		if (this.settings.email && this.settings.password) {
+		if (this.settings.apiToken) {
 			await this.loadRooms();
 		}
 	}
@@ -97,7 +104,6 @@ export default class CampaignManagerPlugin extends Plugin {
 
 			const sectionCount = NoteParser.getSectionCount(parsed);
 
-			// Show confirmation modal (even if no public content - allows clearing from database)
 			new PublishConfirmModal(this.app, parsed, sectionCount, async (confirmed) => {
 				if (confirmed) {
 					await this.doPublish(file, parsed);
@@ -109,24 +115,19 @@ export default class CampaignManagerPlugin extends Plugin {
 		}
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	private async doPublish(file: TFile, parsed: any): Promise<void> {
+	private async doPublish(file: TFile, parsed: ParsedNote): Promise<void> {
 		try {
 			const contentHash = await this.getFileHash(file);
 
-			// Check for existing notes with same content hash (moved files)
 			const existingNotes = await this.api.getPublishedNotes(this.settings.selectedRoomId);
 
 			const duplicates = existingNotes.filter(note => {
-				// Primary check: contentHash (if backend supports it)
 				if (note.contentHash && contentHash) {
 					return note.contentHash === contentHash && note.obsidianPath !== file.path;
 				}
-				// Fallback: same title but different path (likely moved file)
 				return note.title === parsed.title && note.obsidianPath !== file.path;
 			});
 
-			// Remove duplicates (old locations of moved files)
 			for (const duplicate of duplicates) {
 				try {
 					await this.api.deleteNote(this.settings.selectedRoomId, duplicate.id);
@@ -135,34 +136,31 @@ export default class CampaignManagerPlugin extends Plugin {
 				}
 			}
 
-			// First publish the note WITHOUT images to get the note ID
+			const publicSections = NoteParser.getPublicSections(parsed);
+
 			const noteData = {
 				title: parsed.title,
 				obsidianPath: file.path,
 				contentHash,
-				sections: parsed.sections,
+				sections: publicSections,
 			};
 
 			const publishResult = await this.api.publishNote(this.settings.selectedRoomId, noteData);
 			const noteId = publishResult.id;
 
-			// Now extract and upload images using the real note ID
 			const content = await this.app.vault.read(file);
 			const publicImages = NoteParser.getPublicImages(content);
 			const imagePathMap = new Map<string, string>();
 
-			// Deduplicate images by path
 			const uniqueImages = new Map<string, ImageReference>();
 			for (const imageRef of publicImages) {
 				uniqueImages.set(imageRef.localPath, imageRef);
 			}
 
 			if (uniqueImages.size > 0) {
-				// Check for existing images in the database
 				const existingImagesResponse = await this.api.getExistingImages(this.settings.selectedRoomId, noteId);
 				const existingImages = existingImagesResponse.images || [];
 
-				// Create a map of original names to URLs for existing images
 				const existingImageMap = new Map<string, string>();
 				for (const img of existingImages) {
 					existingImageMap.set(img.originalName, img.url);
@@ -170,16 +168,12 @@ export default class CampaignManagerPlugin extends Plugin {
 
 				const imagesToUpload = new Map<string, ImageReference>();
 
-				// Check each unique image - only upload if not already exists
 				for (const [path, imageRef] of uniqueImages) {
-					// Get the actual filename from the path
 					const filename = path.split('/').pop() || path;
 
 					if (existingImageMap.has(filename)) {
-						// Image already exists, use existing URL
 						imagePathMap.set(path, existingImageMap.get(filename)!);
 					} else {
-						// Image doesn't exist, needs to be uploaded
 						imagesToUpload.set(path, imageRef);
 					}
 				}
@@ -201,18 +195,18 @@ export default class CampaignManagerPlugin extends Plugin {
 					new Notice('All images already exist, reusing existing URLs...');
 				}
 
-				// If any images were processed, update the note content with URLs
 				if (imagePathMap.size > 0) {
 					let updatedContent = content;
 					updatedContent = NoteParser.replaceImagePathsInContent(content, imagePathMap);
 
-					// Re-parse with updated content and update the note
 					const finalParsed = NoteParser.parseNote(updatedContent, parsed.title);
+					const finalPublicSections = NoteParser.getPublicSections(finalParsed);
+
 					const updatedNoteData = {
 						title: finalParsed.title,
 						obsidianPath: file.path,
 						contentHash,
-						sections: finalParsed.sections,
+						sections: finalPublicSections,
 					};
 
 					await this.api.publishNote(this.settings.selectedRoomId, updatedNoteData);
@@ -237,9 +231,9 @@ export default class CampaignManagerPlugin extends Plugin {
 
 	private async getFileHash(file: TFile): Promise<string> {
 		const content = await this.app.vault.read(file);
-		// More robust hash based on content and title
 		const hashInput = content + '|' + file.basename;
 		const hash = this.simpleHash(hashInput);
+
 		return hash;
 	}
 
@@ -253,23 +247,20 @@ export default class CampaignManagerPlugin extends Plugin {
 		return Math.abs(hash).toString(36);
 	}
 
-		private async uploadImage(imageRef: ImageReference, noteFile: TFile, noteId: string): Promise<string | null> {
+	private async uploadImage(imageRef: ImageReference, noteFile: TFile, noteId: string): Promise<string | null> {
 		try {
-			// Resolve image path relative to the note
-			const imageFile = this.app.metadataCache.getFirstLinkpathDest(imageRef.localPath, noteFile.path);
+			const normalizedPath = normalizePath(imageRef.localPath);
+			const imageFile = this.app.metadataCache.getFirstLinkpathDest(normalizedPath, noteFile.path);
 			if (!imageFile) {
-				throw new Error(`Image file not found: ${imageRef.localPath}`);
+				throw new Error(`Image file not found: ${normalizedPath}`);
 			}
 
-			// Read image file
 			const imageBuffer = await this.app.vault.readBinary(imageFile);
 
-			// Create form data for upload
 			const formData = new FormData();
 			const blob = new Blob([imageBuffer], { type: this.getMimeType(imageFile.extension) });
 			formData.append('files', blob, imageFile.name);
 
-			// Upload to API
 			const response = await this.api.uploadImage(
 				this.settings.selectedRoomId,
 				noteId,
@@ -324,38 +315,98 @@ export default class CampaignManagerPlugin extends Plugin {
 
 	async loadRooms(): Promise<void> {
 		try {
-			const loginSuccess = await this.api.login();
-			if (loginSuccess) {
+			const tokenValid = await this.api.validateToken();
+
+			if (tokenValid) {
 				this.rooms = await this.api.getRooms();
+			} else {
+				console.log('❌ Token invalid, clearing rooms');
+				this.rooms = [];
 			}
 		} catch (error) {
-			console.error('Failed to load rooms:', error);
+			console.error('❌ Failed to load rooms:', error);
+			this.rooms = [];
 		}
 	}
 
 	async onunload() {
-		// Cleanup
+		// No cleanup needed - plugin doesn't register any events or intervals
+		// API instance will be garbage collected
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		const data = await this.loadData();
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
+
+		if (this.settings.apiToken) {
+			this.settings.apiToken = this.decryptSensitiveData(this.settings.apiToken);
+		}
 	}
 
 	async saveSettings() {
-		await this.saveData(this.settings);
+		const settingsToSave = { ...this.settings };
+
+		if (settingsToSave.apiToken) {
+			settingsToSave.apiToken = this.encryptSensitiveData(settingsToSave.apiToken);
+		}
+
+		await this.saveData(settingsToSave);
 		this.api?.updateSettings(this.settings);
+	}
+
+	private getDeviceKey(): string {
+		const baseKey = 'grimbane-obsidian-plugin-v1';
+		const deviceInfo = `${navigator.platform}-${screen.width}x${screen.height}`;
+		const combined = `${baseKey}-${deviceInfo}`;
+		return this.simpleHash(combined).substring(0, 16);
+	}
+
+	private encryptSensitiveData(data: string): string {
+		if (!data) return '';
+
+		try {
+			const key = this.getDeviceKey();
+			const encrypted = data.split('').map((char, index) =>
+				String.fromCharCode(char.charCodeAt(0) ^ key.charCodeAt(index % key.length))
+			).join('');
+			return btoa(encrypted);
+		} catch (error) {
+			console.error('Encryption failed:', error);
+			return data;
+		}
+	}
+
+	private decryptSensitiveData(encryptedData: string): string {
+		if (!encryptedData) return '';
+
+		try {
+			const encrypted = atob(encryptedData);
+			const key = this.getDeviceKey();
+			const decrypted = encrypted.split('').map((char, index) =>
+				String.fromCharCode(char.charCodeAt(0) ^ key.charCodeAt(index % key.length))
+			).join('');
+
+			if (decrypted.length > 10 && /^[a-zA-Z0-9_-]+$/.test(decrypted)) {
+				return decrypted;
+			} else {
+				console.warn('Decryption resulted in invalid token format');
+				return encryptedData;
+			}
+		} catch (error) {
+			console.error('Decryption failed:', error);
+			return encryptedData;
+		}
 	}
 }
 
 class PublishConfirmModal extends Modal {
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	private parsed: any;
+	private parsed: ParsedNote;
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	private sectionCount: any;
 	private callback: (confirmed: boolean) => void;
 
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	constructor(app: App, parsed: any, sectionCount: any, callback: (confirmed: boolean) => void) {
+	constructor(app: App, parsed: ParsedNote, sectionCount: any, callback: (confirmed: boolean) => void) {
 		super(app);
 		this.parsed = parsed;
 		this.sectionCount = sectionCount;
@@ -459,7 +510,7 @@ class PublishedNotesModal extends Modal {
 		this.plugin = plugin;
 	}
 
-		onOpen() {
+	onOpen() {
 		const { contentEl } = this;
 		contentEl.empty();
 		contentEl.addClass('published-notes-modal');
@@ -485,7 +536,7 @@ class PublishedNotesModal extends Modal {
 				cls: 'note-date'
 			});
 
-						if (note.obsidianPath) {
+			if (note.obsidianPath) {
 				const pathEl = noteInfo.createEl('span', {
 					text: note.obsidianPath,
 					cls: 'note-path'
@@ -495,7 +546,7 @@ class PublishedNotesModal extends Modal {
 				};
 			}
 
-						const actions = noteItem.createDiv('note-actions');
+			const actions = noteItem.createDiv('note-actions');
 
 			const previewBtn = actions.createEl('button', { text: 'Preview' });
 			previewBtn.onclick = () => {
@@ -505,12 +556,13 @@ class PublishedNotesModal extends Modal {
 	}
 
 	private async openNoteInObsidian(path: string) {
-		const file = this.app.vault.getAbstractFileByPath(path);
+		const normalizedPath = normalizePath(path);
+		const file = this.app.vault.getAbstractFileByPath(normalizedPath);
 		if (file instanceof TFile) {
 			await this.app.workspace.getLeaf().openFile(file);
 			this.close();
 		} else {
-			new Notice(`File not found: ${path}`);
+			new Notice(`File not found: ${normalizedPath}`);
 		}
 	}
 
@@ -577,66 +629,60 @@ class CampaignSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		containerEl.createEl('h2', { text: 'D&D Campaign Manager Settings' });
+		new Setting(containerEl).setName('Grimbane Settings').setHeading();
 
-		new Setting(containerEl)
-			.setName('API URL')
-			.setDesc('Campaign Manager API endpoint')
-			.addText(text => text
-				.setPlaceholder('http://localhost:3001')
-				.setValue(this.plugin.settings.apiUrl)
-				.onChange(async (value) => {
-					this.plugin.settings.apiUrl = value;
-					await this.plugin.saveSettings();
-				}));
-
-		new Setting(containerEl)
-			.setName('Email')
-			.setDesc('Your campaign manager account email')
-			.addText(text => text
-				.setPlaceholder('email@example.com')
-				.setValue(this.plugin.settings.email)
-				.onChange(async (value) => {
-					this.plugin.settings.email = value;
-					await this.plugin.saveSettings();
-				}));
-
-		new Setting(containerEl)
-			.setName('Password')
-			.setDesc('Your campaign manager account password')
-			.addText(text => {
-				text.setPlaceholder('Password')
-					.setValue(this.plugin.settings.password)
+		// Developer Mode API URL (tylko jeśli developer mode włączony)
+		if (this.plugin.settings.developerMode) {
+			new Setting(containerEl)
+				.setName('API URL')
+				.setDesc('Campaign Manager API endpoint (Developer Mode)')
+				.addText(text => text
+					.setPlaceholder('http://localhost:4000/api')
+					.setValue(this.plugin.settings.apiUrl)
 					.onChange(async (value) => {
-						this.plugin.settings.password = value;
+						this.plugin.settings.apiUrl = value;
+						await this.plugin.saveSettings();
+					}));
+		}
+
+		new Setting(containerEl)
+			.setName('API token')
+			.setDesc('Your campaign manager API token (more secure than password)')
+			.addText(text => {
+				text.setPlaceholder('API Token')
+					.setValue(this.plugin.settings.apiToken)
+					.onChange(async (value) => {
+						this.plugin.settings.apiToken = value;
 						await this.plugin.saveSettings();
 					});
 				text.inputEl.type = 'password';
 			});
 
 		new Setting(containerEl)
-			.setName('Test Connection')
-			.setDesc('Test connection to Campaign Manager API')
+			.setName('Test connection')
+			.setDesc('Test API token and connection to Campaign Manager')
 			.addButton(button => button
 				.setButtonText('Test')
 				.onClick(async () => {
 					const success = await this.plugin.api.testConnection();
-					new Notice(success ? 'Connection successful!' : 'Connection failed!');
+					new Notice(success ? 'API token valid! Connection successful!' : 'Invalid API token or connection failed!');
 					if (success) {
 						await this.plugin.loadRooms();
 						this.display(); // Refresh settings to show rooms
 					}
 				}));
 
-		if (this.plugin.rooms.length > 0) {
+		const gmRooms = this.plugin.rooms.filter(room => room.isGM);
+
+		if (gmRooms.length > 0) {
 			new Setting(containerEl)
-				.setName('Select Room')
-				.setDesc('Choose which campaign room to publish to')
+				.setName('Select room')
+				.setDesc('Choose which campaign room to publish to (GM only)')
 				.addDropdown(dropdown => {
 					dropdown.addOption('', 'Select a room...');
 
-					this.plugin.rooms.forEach(room => {
-						dropdown.addOption(room.id, `${room.name} (${room.role.toUpperCase()})`);
+					gmRooms.forEach(room => {
+						dropdown.addOption(room.id, `${room.name} (GM)`);
 					});
 
 					dropdown.setValue(this.plugin.settings.selectedRoomId);
@@ -645,16 +691,90 @@ class CampaignSettingTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 					});
 				});
+		} else {
+			new Setting(containerEl)
+				.setName('Rooms')
+				.setDesc('No rooms available where you are Game Master. Create a room in the web interface to publish notes.')
+				.addText(() => { });
 		}
 
+		// Danger Zone
+		containerEl.createEl('hr');
+		const dangerZoneSetting = new Setting(containerEl).setName('⚠️ Danger Zone').setHeading();
+		dangerZoneSetting.settingEl.addClass('danger-zone');
+
 		new Setting(containerEl)
-			.setName('Auto Sync')
-			.setDesc('Automatically sync notes when saved')
+			.setName('Developer mode')
+			.setDesc('Enable custom API URL for development. Disabling will reset to production server.')
 			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.autoSync)
+				.setValue(this.plugin.settings.developerMode)
 				.onChange(async (value) => {
-					this.plugin.settings.autoSync = value;
+					this.plugin.settings.developerMode = value;
+
+					if (!value) {
+						this.plugin.settings.apiUrl = 'https://api-dnd.failytales.com/api';
+					}
+
 					await this.plugin.saveSettings();
+					this.display();
 				}));
+	}
+}
+
+class PrivacyConsentModal extends Modal {
+	private plugin: CampaignManagerPlugin;
+
+	constructor(app: App, plugin: CampaignManagerPlugin) {
+		super(app);
+		this.plugin = plugin;
+	}
+
+	onOpen() {
+		const { contentEl } = this;
+		contentEl.empty();
+		contentEl.addClass('privacy-consent-modal');
+
+		contentEl.createEl('h2', { text: '🔒 Privacy & Security Notice' });
+
+		const warning = contentEl.createDiv('privacy-warning');
+		warning.createEl('h3', { text: 'This plugin transmits data to external servers' });
+
+		const list = warning.createEl('ul');
+		list.createEl('li', { text: '✅ Only content within [PUBLIC] markers is sent' });
+		list.createEl('li', { text: '✅ Private content outside [PUBLIC] blocks stays local' });
+		list.createEl('li', { text: '✅ Images in public sections are uploaded' });
+		list.createEl('li', { text: '🔐 API tokens are encrypted before storage' });
+
+		contentEl.createEl('p', {
+			text: '⚠️ By continuing, you acknowledge that public content will be shared with your campaign server.'
+		});
+
+		contentEl.createEl('p', {
+			text: 'You can review what content will be published using the "Preview public content" command before publishing.'
+		});
+
+		const buttonContainer = contentEl.createDiv('modal-button-container');
+
+		const cancelBtn = buttonContainer.createEl('button', { text: 'Cancel' });
+		cancelBtn.onclick = () => {
+			this.plugin.settings.privacyConsentGiven = false;
+			this.close();
+		};
+
+		const acceptBtn = buttonContainer.createEl('button', {
+			text: 'I Understand - Continue',
+			cls: 'mod-cta'
+		});
+		acceptBtn.onclick = async () => {
+			this.plugin.settings.privacyConsentGiven = true;
+			await this.plugin.saveSettings();
+			this.close();
+			await this.plugin.start();
+		};
+	}
+
+	onClose() {
+		const { contentEl } = this;
+		contentEl.empty();
 	}
 }

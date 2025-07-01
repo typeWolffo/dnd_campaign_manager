@@ -1,10 +1,10 @@
-import { Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, redirect, useLoaderData, useNavigate } from "react-router";
+import { NotesSection } from "~/components/NotesSection";
+import { Members } from "~/components/Room/Members";
+import { RoomDetails } from "~/components/Room/RoomDetails";
 import { cn } from "~/lib/utils";
-import { AddMemberDialog } from "../components/AddMemberDialog";
-import { NotesSection } from "../components/NotesSection";
-import { Avatar, AvatarFallback } from "../components/ui/avatar";
+import { ApiTokensSection } from "../components/ApiTokensSection";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
@@ -16,6 +16,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../components/ui/dialog";
+import {
+  Tabs,
+  TabsContent,
+  TabsContents,
+  TabsList,
+  TabsTrigger,
+} from "../components/animate-ui/radix/tabs";
 import { useRemoveMember, useRoom } from "../lib/api-hooks";
 import { useSession } from "../lib/auth-client";
 import { useRoomWebSocket } from "../lib/use-websocket";
@@ -29,7 +36,7 @@ export const clientLoader = async ({ params }: Route.ClientLoaderArgs) => {
   return { roomId: params.roomId };
 };
 
-export default function RoomDetails() {
+export default function RoomDetailsPage() {
   const { roomId } = useLoaderData<typeof clientLoader>();
   const { data: session, isPending: sessionLoading } = useSession();
   const { data: room, isLoading: roomLoading, error: roomError } = useRoom(roomId);
@@ -125,101 +132,28 @@ export default function RoomDetails() {
 
       {/* Main content */}
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 rounded-t-2xl h-full">
-        <div className="px-4 py-6 sm:px-0">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Room Info */}
-            <div className="lg:col-span-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Campaign Details</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <h3 className="font-medium text-gray-900 dark:text-white">Description</h3>
-                    <p className="mt-1 text-gray-600 dark:text-gray-300">
-                      {room.description || "No description provided."}
-                    </p>
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-gray-900 dark:text-white">Created</h3>
-                    <p className="mt-1 text-gray-600 dark:text-gray-300">
-                      {new Date(room.createdAt).toLocaleDateString()} at{" "}
-                      {new Date(room.createdAt).toLocaleTimeString()}
-                    </p>
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-gray-900 dark:text-white">Last Updated</h3>
-                    <p className="mt-1 text-gray-600 dark:text-gray-300">
-                      {new Date(room.updatedAt).toLocaleDateString()} at{" "}
-                      {new Date(room.updatedAt).toLocaleTimeString()}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Notes section */}
-              <div className="mt-6">
-                <NotesSection roomId={roomId} isGM={isGM} />
-              </div>
-            </div>
-
-            {/* Members sidebar */}
-            <div>
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle>Members ({room.members?.length || 0})</CardTitle>
-                    {isGM && (
-                      <AddMemberDialog roomId={roomId} existingMembers={room.members || []} />
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {room.members?.map(member => (
-                      <div key={member.id} className="flex items-center space-x-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback>
-                            {(member.userName || member.userEmail).charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                            {member.userName || member.userEmail}
-                          </p>
-                          <p className="text-xs text-gray-500 truncate">{member.userEmail}</p>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Badge
-                            variant={member.role === "gm" ? "default" : "secondary"}
-                            className="text-xs"
-                          >
-                            {member.role?.toUpperCase()}
-                          </Badge>
-                          {isGM && member.role !== "gm" && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                setMemberToRemove({
-                                  id: member.id,
-                                  name: member.userName || member.userEmail,
-                                })
-                              }
-                              className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </div>
+        <Tabs defaultValue="tab1">
+          <TabsList>
+            <TabsTrigger value="tab1">Notes</TabsTrigger>
+            <TabsTrigger value="tab2">Room Details</TabsTrigger>
+            <TabsTrigger value="tab3">Members</TabsTrigger>
+            <TabsTrigger value="tab4">API Tokens</TabsTrigger>
+          </TabsList>
+          <TabsContents>
+            <TabsContent value="tab1">
+              <NotesSection roomId={roomId} isGM={isGM} />
+            </TabsContent>
+            <TabsContent value="tab2">
+              <RoomDetails room={room} />
+            </TabsContent>
+            <TabsContent value="tab3">
+              <Members room={room} onRemoveMember={setMemberToRemove} />
+            </TabsContent>
+            <TabsContent value="tab4">
+              <ApiTokensSection isGM={isGM} />
+            </TabsContent>
+          </TabsContents>
+        </Tabs>
       </main>
 
       {/* Remove member confirmation dialog */}

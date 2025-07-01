@@ -12,9 +12,7 @@ export class NoteParser {
     for (const line of lines) {
       const trimmedLine = line.trim();
 
-      // Check for [PUBLIC] marker
       if (trimmedLine === '[PUBLIC]') {
-        // Save previous section if it exists
         if (currentSection.trim()) {
           sections.push({
             content: currentSection.trim(),
@@ -27,9 +25,7 @@ export class NoteParser {
         continue;
       }
 
-      // Check for [!PUBLIC] marker
       if (trimmedLine === '[!PUBLIC]') {
-        // Save previous section if it exists
         if (currentSection.trim()) {
           sections.push({
             content: currentSection.trim(),
@@ -42,11 +38,9 @@ export class NoteParser {
         continue;
       }
 
-      // Add line to current section
       currentSection += line + '\n';
     }
 
-    // Add final section if it exists
     if (currentSection.trim()) {
       sections.push({
         content: currentSection.trim(),
@@ -55,7 +49,6 @@ export class NoteParser {
       });
     }
 
-    // If no markers found, treat entire content as private
     if (sections.length === 0 && content.trim()) {
       sections.push({
         content: content.trim(),
@@ -75,6 +68,10 @@ export class NoteParser {
       .filter(section => section.isPublic)
       .map(section => section.content)
       .join('\n\n');
+  }
+
+  static getPublicSections(parsed: ParsedNote): NoteSection[] {
+    return parsed.sections.filter(section => section.isPublic);
   }
 
   static getPrivateContent(parsed: ParsedNote): string {
@@ -104,7 +101,6 @@ export class NoteParser {
       const line = lines[lineIndex];
       const trimmedLine = line.trim();
 
-      // Track if we're in a public section
       if (trimmedLine === '[PUBLIC]') {
         currentlyInPublicSection = true;
         continue;
@@ -114,7 +110,6 @@ export class NoteParser {
         continue;
       }
 
-      // Extract markdown-style images: ![alt](path)
       const markdownRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
       let match;
       while ((match = markdownRegex.exec(line)) !== null) {
@@ -132,7 +127,6 @@ export class NoteParser {
         }
       }
 
-      // Extract wikilink-style images: ![[path]]
       const wikilinkRegex = /!\[\[([^\]]+)\]\]/g;
       while ((match = wikilinkRegex.exec(line)) !== null) {
         const path = match[1];
@@ -165,16 +159,14 @@ export class NoteParser {
   static replaceImagePathsInContent(content: string, pathMap: Map<string, string>): string {
     let updatedContent = content;
 
-    // Replace markdown-style images
     updatedContent = updatedContent.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, altText, path) => {
       const newPath = pathMap.get(path);
       return newPath ? `![${altText}](${newPath})` : match;
     });
 
-    // Replace wikilink-style images
     updatedContent = updatedContent.replace(/!\[\[([^\]]+)\]\]/g, (match, path) => {
       const newPath = pathMap.get(path);
-      return newPath ? `![](${newPath})` : match; // Convert to markdown style
+      return newPath ? `![](${newPath})` : match;
     });
 
     return updatedContent;

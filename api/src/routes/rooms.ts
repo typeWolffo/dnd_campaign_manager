@@ -4,13 +4,13 @@ import { rooms, roomMembers, users } from "../db/schema";
 import { CreateRoomSchema, UpdateRoomSchema, AddMemberSchema, RoomIdSchema, MemberIdSchema } from "../types/rooms";
 import { eq, and, or, ilike, ne, sql } from "drizzle-orm";
 import { auth } from "../auth/config";
+import { getAuthFromRequest } from "../lib/auth-middleware";
+import { roomSchema, userRoomSchema } from "../schemas/room";
 
 export const roomsRouter = new Elysia({ prefix: "/rooms" })
   .derive(async ({ request }: Context) => {
-    const session = await auth.api.getSession({
-      headers: request.headers,
-    });
-    return { auth: session };
+    const authSession = await getAuthFromRequest(request);
+    return { auth: authSession };
   })
 
   .get("/", async ({ auth }) => {
@@ -76,6 +76,9 @@ export const roomsRouter = new Elysia({ prefix: "/rooms" })
     }));
 
     return userRooms;
+  },
+  {
+    response: t.Array(roomSchema)
   })
 
   .get("/:id", async ({ params, auth }) => {
@@ -83,17 +86,16 @@ export const roomsRouter = new Elysia({ prefix: "/rooms" })
       throw new Error("Unauthorized");
     }
 
-    const room = await db
+    const [room] = await db
       .select()
       .from(rooms)
-      .where(eq(rooms.id, params.id))
-      .limit(1);
+      .where(eq(rooms.id, params.id));
 
-    if (!room[0]) {
+    if (!room) {
       throw new Error("Room not found");
     }
 
-    const hasAccess = await db
+    const [hasAccess] = await db
       .select()
       .from(roomMembers)
       .where(
@@ -101,12 +103,11 @@ export const roomsRouter = new Elysia({ prefix: "/rooms" })
           eq(roomMembers.roomId, params.id),
           eq(roomMembers.userId, auth.user.id)
         )
-      )
-      .limit(1);
+      );
 
-    const isGM = room[0].gmId === auth.user.id;
+    const isGM = room.gmId === auth.user.id;
 
-    if (!isGM && !hasAccess[0]) {
+    if (!isGM && !hasAccess) {
       throw new Error("Access denied");
     }
 
@@ -124,12 +125,13 @@ export const roomsRouter = new Elysia({ prefix: "/rooms" })
       .where(eq(roomMembers.roomId, params.id));
 
     return {
-      ...room[0],
+      ...room,
       members,
       isGM,
     };
   }, {
     params: RoomIdSchema,
+    response: roomSchema,
   })
 
   .post("/", async ({ body, auth }) => {
@@ -180,7 +182,7 @@ export const roomsRouter = new Elysia({ prefix: "/rooms" })
       .update(rooms)
       .set({
         ...body,
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString(),
       })
       .where(eq(rooms.id, params.id))
       .returning();

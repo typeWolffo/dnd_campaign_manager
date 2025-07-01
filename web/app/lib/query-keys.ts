@@ -4,6 +4,7 @@ export const queryKeys = createQueryKeyStore({
   auth: {
     session: null,
     user: null,
+    apiTokens: null,
   },
   rooms: {
     all: null,

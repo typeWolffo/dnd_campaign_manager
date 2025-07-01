@@ -52,6 +52,24 @@ body {
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
+  /* 🎲 D&D Specific Colors */
+  --color-arcane: var(--arcane);
+  --color-arcane-foreground: var(--arcane-foreground);
+  --color-hp: var(--hp);
+  --color-mp: var(--mp);
+  --color-ac: var(--ac);
+  --color-xp: var(--xp);
+  --color-initiative: var(--initiative);
+  --color-mystical: var(--mystical);
+  --color-mystical-foreground: var(--mystical-foreground);
+  --color-buff: var(--buff);
+  --color-debuff: var(--debuff);
+  --color-magic: var(--magic);
+  --color-poison: var(--poison);
+  --color-fire: var(--fire);
+  --color-ice: var(--ice);
+  --color-lightning: var(--lightning);
+
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
   --font-serif: var(--font-serif);
@@ -79,6 +97,7 @@ body {
 }
 
 :root {
+  /* Light mode - zachowuję Twoje oryginalne */
   --background: oklch(0.9842 0.0034 247.8575);
   --foreground: oklch(0.2795 0.0368 260.031);
   --card: oklch(1 0 0);
@@ -111,6 +130,25 @@ body {
   --sidebar-accent-foreground: oklch(1 0 0);
   --sidebar-border: oklch(0.9276 0.0058 264.5313);
   --sidebar-ring: oklch(0.567 0.1028 58.324);
+
+  /* D&D Colors - Light Mode */
+  --arcane: oklch(0.6056 0.2189 292.7172);
+  --arcane-foreground: oklch(1 0 0);
+  --hp: oklch(0.6368 0.2078 25.3313);
+  --mp: oklch(0.6226 0.1966 264.9657);
+  --ac: oklch(0.7765 0.1568 70.6736);
+  --xp: oklch(0.7599 0.1685 142.4953);
+  --initiative: oklch(0.6056 0.2189 292.7172);
+  --mystical: oklch(0.7344 0.1245 70.1225);
+  --mystical-foreground: oklch(0.1 0 0);
+  --buff: oklch(0.7599 0.1685 142.4953);
+  --debuff: oklch(0.6368 0.2078 25.3313);
+  --magic: oklch(0.6056 0.2189 292.7172);
+  --poison: oklch(0.7599 0.1685 125.7642);
+  --fire: oklch(0.7452 0.1719 44.0649);
+  --ice: oklch(0.7599 0.1324 196.8493);
+  --lightning: oklch(0.8471 0.1568 85.4321);
+
   --font-sans: sans-serif;
   --font-serif: serif;
   --font-mono: Roboto Mono, monospace;
@@ -127,51 +165,75 @@ body {
 }
 
 .dark {
-  --background: oklch(0.2046 0 0);
-  --foreground: oklch(0.9276 0.0058 264.5313);
-  --card: oklch(0.2686 0 0);
-  --card-foreground: oklch(1 0 0);
-  --popover: oklch(0.2686 0 0);
-  --popover-foreground: oklch(1 0 0);
-  --primary: oklch(0.567 0.1028 58.324);
+  /* 🌙 Dark Mode - Arcane Purple DM Theme */
+  --background: oklch(
+    0.1389 0.0078 295.5649
+  ); /* Jaśniejszy niż poprzednio - #12111A zamiast #0B0A0F */
+  --foreground: oklch(0.9751 0.0039 286.4758); /* Arcane-tinted white - #F5F3FF */
+  --card: oklch(0.1889 0.0156 295.5649); /* Card background - #16213E */
+  --card-foreground: oklch(0.9751 0.0039 286.4758);
+  --popover: oklch(0.1889 0.0156 295.5649);
+  --popover-foreground: oklch(0.9751 0.0039 286.4758);
+  --primary: oklch(0.6056 0.2189 292.7172); /* Arcane Purple - #8B5FBF */
   --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.3715 0 0);
-  --secondary-foreground: oklch(1 0 0);
-  --muted: oklch(0.551 0.0234 264.3637);
-  --muted-foreground: oklch(0.7155 0 0);
-  --accent: oklch(0.3936 0.0978 295.6385);
+  --secondary: oklch(0.2389 0.0234 295.5649); /* Secondary surface - #261B33 */
+  --secondary-foreground: oklch(0.9751 0.0039 286.4758);
+  --muted: oklch(0.3289 0.0312 295.5649); /* Muted surface - #3A284D */
+  --muted-foreground: oklch(0.7951 0.0156 286.4758); /* Muted text - #C7C0E0 */
+  --accent: oklch(0.6056 0.2189 292.7172); /* Accent = Arcane Purple */
   --accent-foreground: oklch(1 0 0);
-  --destructive: oklch(0.6368 0.2078 25.3313);
+  --destructive: oklch(0.6368 0.2078 25.3313); /* Red for damage */
   --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.3094 0.0058 17.4691);
-  --input: oklch(0.2686 0 0);
-  --ring: oklch(0.567 0.1028 58.324);
-  --chart-1: oklch(0.6513 0.157 22.4284);
-  --chart-2: oklch(0.7433 0.1436 143.9633);
-  --chart-3: oklch(0.5772 0.1198 281.9814);
-  --chart-4: oklch(0.8144 0.13 108.9702);
-  --chart-5: oklch(0.6127 0.216 327.8183);
-  --sidebar: oklch(0.2686 0 0);
-  --sidebar-foreground: oklch(0.9276 0.0058 264.5313);
-  --sidebar-primary: oklch(0.567 0.1028 58.324);
+  --border: oklch(0.2889 0.0234 295.5649); /* Border - #3A284D */
+  --input: oklch(0.1889 0.0156 295.5649); /* Input background */
+  --ring: oklch(0.6056 0.2189 292.7172); /* Focus ring = Arcane */
+
+  /* Chart colors dla D&D stats */
+  --chart-1: oklch(0.6368 0.2078 25.3313); /* HP - Red */
+  --chart-2: oklch(0.6226 0.1966 264.9657); /* MP - Blue */
+  --chart-3: oklch(0.7765 0.1568 70.6736); /* AC - Amber */
+  --chart-4: oklch(0.7599 0.1685 142.4953); /* XP - Green */
+  --chart-5: oklch(0.6056 0.2189 292.7172); /* Initiative - Purple */
+
+  --sidebar: oklch(0.1889 0.0156 295.5649);
+  --sidebar-foreground: oklch(0.9751 0.0039 286.4758);
+  --sidebar-primary: oklch(0.6056 0.2189 292.7172);
   --sidebar-primary-foreground: oklch(1 0 0);
   --sidebar-accent: oklch(0.6056 0.2189 292.7172);
   --sidebar-accent-foreground: oklch(1 0 0);
-  --sidebar-border: oklch(0.3094 0.0058 17.4691);
-  --sidebar-ring: oklch(0.567 0.1028 58.324);
+  --sidebar-border: oklch(0.2889 0.0234 295.5649);
+  --sidebar-ring: oklch(0.6056 0.2189 292.7172);
+
+  /* 🎲 D&D Specific Colors - Dark Mode */
+  --arcane: oklch(0.6056 0.2189 292.7172); /* Main arcane purple */
+  --arcane-foreground: oklch(1 0 0);
+  --hp: oklch(0.6368 0.2078 25.3313); /* Health Points - Red */
+  --mp: oklch(0.6226 0.1966 264.9657); /* Mana Points - Blue */
+  --ac: oklch(0.7765 0.1568 70.6736); /* Armor Class - Amber */
+  --xp: oklch(0.7599 0.1685 142.4953); /* Experience - Green */
+  --initiative: oklch(0.6056 0.2189 292.7172); /* Initiative - Arcane Purple */
+  --mystical: oklch(0.7344 0.1245 70.1225); /* Mystical Gold - complementary */
+  --mystical-foreground: oklch(0.1 0 0);
+  --buff: oklch(0.7599 0.1685 142.4953); /* Positive effects - Green */
+  --debuff: oklch(0.6368 0.2078 25.3313); /* Negative effects - Red */
+  --magic: oklch(0.6056 0.2189 292.7172); /* Magic effects - Purple */
+  --poison: oklch(0.7299 0.1324 125.7642); /* Poison - Lime Green */
+  --fire: oklch(0.7452 0.1719 44.0649); /* Fire - Orange */
+  --ice: oklch(0.7599 0.1324 196.8493); /* Ice - Cyan */
+  --lightning: oklch(0.8471 0.1568 85.4321); /* Lightning - Yellow */
+
   --font-sans: sans-serif;
   --font-serif: serif;
   --font-mono: Roboto Mono, monospace;
   --radius: 0.75rem;
-  --shadow-2xs: 0px 0px 25px 0px hsl(0 0% 7.0588% / 0.12);
-  --shadow-xs: 0px 0px 25px 0px hsl(0 0% 7.0588% / 0.12);
-  --shadow-sm: 0px 0px 25px 0px hsl(0 0% 7.0588% / 0.24), 0px 1px 2px -1px hsl(0 0% 7.0588% / 0.24);
-  --shadow: 0px 0px 25px 0px hsl(0 0% 7.0588% / 0.24), 0px 1px 2px -1px hsl(0 0% 7.0588% / 0.24);
-  --shadow-md: 0px 0px 25px 0px hsl(0 0% 7.0588% / 0.24), 0px 2px 4px -1px hsl(0 0% 7.0588% / 0.24);
-  --shadow-lg: 0px 0px 25px 0px hsl(0 0% 7.0588% / 0.24), 0px 4px 6px -1px hsl(0 0% 7.0588% / 0.24);
-  --shadow-xl:
-    0px 0px 25px 0px hsl(0 0% 7.0588% / 0.24), 0px 8px 10px -1px hsl(0 0% 7.0588% / 0.24);
-  --shadow-2xl: 0px 0px 25px 0px hsl(0 0% 7.0588% / 0.6);
+  --shadow-2xs: 0px 0px 25px 0px hsl(292 71% 8% / 0.12);
+  --shadow-xs: 0px 0px 25px 0px hsl(292 71% 8% / 0.12);
+  --shadow-sm: 0px 0px 25px 0px hsl(292 71% 8% / 0.24), 0px 1px 2px -1px hsl(292 71% 8% / 0.24);
+  --shadow: 0px 0px 25px 0px hsl(292 71% 8% / 0.24), 0px 1px 2px -1px hsl(292 71% 8% / 0.24);
+  --shadow-md: 0px 0px 25px 0px hsl(292 71% 8% / 0.24), 0px 2px 4px -1px hsl(292 71% 8% / 0.24);
+  --shadow-lg: 0px 0px 25px 0px hsl(292 71% 8% / 0.24), 0px 4px 6px -1px hsl(292 71% 8% / 0.24);
+  --shadow-xl: 0px 0px 25px 0px hsl(292 71% 8% / 0.24), 0px 8px 10px -1px hsl(292 71% 8% / 0.24);
+  --shadow-2xl: 0px 0px 25px 0px hsl(292 71% 8% / 0.6);
 }
 
 @layer base {
@@ -180,6 +242,225 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* 🔮 Arcane Magic Effects */
+@layer utilities {
+  .bg-arcane-gradient {
+    background: linear-gradient(
+      135deg,
+      oklch(0.6056 0.2189 292.7172),
+      oklch(0.5056 0.1989 295.7172)
+    );
+  }
+
+  .bg-dungeon-gradient {
+    background: linear-gradient(
+      135deg,
+      oklch(0.1389 0.0078 295.5649),
+      oklch(0.1889 0.0156 295.5649)
+    );
+  }
+
+  .bg-card-gradient {
+    background: linear-gradient(
+      135deg,
+      oklch(0.1889 0.0156 295.5649),
+      oklch(0.2389 0.0234 295.5649)
+    );
+  }
+
+  .bg-mystical-gradient {
+    background: linear-gradient(
+      135deg,
+      oklch(0.6056 0.2189 292.7172),
+      oklch(0.7344 0.1245 70.1225)
+    );
+  }
+
+  .text-arcane-glow {
+    color: oklch(0.6056 0.2189 292.7172);
+    text-shadow: 0 0 10px oklch(0.6056 0.2189 292.7172 / 0.5);
+  }
+
+  .border-arcane-glow {
+    border-color: oklch(0.6056 0.2189 292.7172);
+    box-shadow: 0 0 15px oklch(0.6056 0.2189 292.7172 / 0.3);
+  }
+
+  .arcane-glow {
+    box-shadow: 0 0 20px oklch(0.6056 0.2189 292.7172 / 0.3);
+    border-color: oklch(0.6056 0.2189 292.7172);
+  }
+
+  .arcane-glow-strong {
+    box-shadow:
+      0 0 30px oklch(0.6056 0.2189 292.7172 / 0.5),
+      0 0 60px oklch(0.6056 0.2189 292.7172 / 0.2);
+    border-color: oklch(0.6056 0.2189 292.7172);
+  }
+
+  .bg-card-hover {
+    background: linear-gradient(
+      135deg,
+      oklch(0.1889 0.0156 295.5649),
+      oklch(0.2389 0.0234 295.5649)
+    );
+    transition: all 0.3s ease;
+    border: 1px solid oklch(0.2889 0.0234 295.5649);
+  }
+
+  .bg-card-hover:hover {
+    background: linear-gradient(
+      135deg,
+      oklch(0.2389 0.0234 295.5649),
+      oklch(0.2889 0.0312 295.5649)
+    );
+    border-color: oklch(0.6056 0.2189 292.7172);
+    box-shadow:
+      0 4px 25px oklch(0.6056 0.2189 292.7172 / 0.2),
+      0 0 30px oklch(0.6056 0.2189 292.7172 / 0.1);
+    transform: translateY(-2px);
+  }
+
+  .spell-slot {
+    background: linear-gradient(
+      135deg,
+      oklch(0.6056 0.2189 292.7172),
+      oklch(0.5056 0.1989 295.7172)
+    );
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px oklch(0.6056 0.2189 292.7172 / 0.3);
+  }
+
+  .spell-slot:hover {
+    background: linear-gradient(
+      135deg,
+      oklch(0.7056 0.2389 292.7172),
+      oklch(0.6056 0.2189 292.7172)
+    );
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 4px 15px oklch(0.6056 0.2189 292.7172 / 0.4);
+  }
+
+  .spell-slot.used {
+    background: linear-gradient(
+      135deg,
+      oklch(0.2889 0.0234 295.5649),
+      oklch(0.2389 0.0156 295.5649)
+    );
+    opacity: 0.6;
+    box-shadow: inset 0 2px 4px oklch(0.1389 0.0078 295.5649 / 0.5);
+  }
+
+  .dice-roll {
+    background: linear-gradient(
+      135deg,
+      oklch(0.2389 0.0234 295.5649),
+      oklch(0.2889 0.0312 295.5649)
+    );
+    border: 2px solid oklch(0.6056 0.2189 292.7172);
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px oklch(0.6056 0.2189 292.7172 / 0.2);
+  }
+
+  .dice-roll:hover {
+    background: linear-gradient(
+      135deg,
+      oklch(0.6056 0.2189 292.7172),
+      oklch(0.5056 0.1989 295.7172)
+    );
+    transform: scale(1.05) rotateZ(5deg);
+    box-shadow: 0 4px 20px oklch(0.6056 0.2189 292.7172 / 0.4);
+  }
+
+  .dice-roll.d20 {
+    background: linear-gradient(
+      135deg,
+      oklch(0.6056 0.2189 292.7172),
+      oklch(0.7344 0.1245 70.1225)
+    );
+    box-shadow:
+      0 0 20px oklch(0.6056 0.2189 292.7172 / 0.4),
+      0 0 40px oklch(0.6056 0.2189 292.7172 / 0.2);
+  }
+
+  .dice-roll.d20:hover {
+    box-shadow:
+      0 0 30px oklch(0.6056 0.2189 292.7172 / 0.6),
+      0 0 60px oklch(0.6056 0.2189 292.7172 / 0.3);
+    transform: scale(1.1) rotateZ(10deg);
+  }
+
+  .initiative-active {
+    background: linear-gradient(
+      135deg,
+      oklch(0.6056 0.2189 292.7172 / 0.2),
+      oklch(0.7344 0.1245 70.1225 / 0.1)
+    );
+    border: 2px solid oklch(0.6056 0.2189 292.7172);
+    box-shadow:
+      0 0 25px oklch(0.6056 0.2189 292.7172 / 0.3),
+      inset 0 1px 0 oklch(0.7056 0.2389 292.7172 / 0.2);
+    animation: pulse-arcane 2s infinite;
+  }
+
+  .status-effect {
+    border-radius: 9999px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border: 1px solid;
+    transition: all 0.3s ease;
+  }
+
+  .status-effect:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px currentColor;
+  }
+
+  .monster-card {
+    background: linear-gradient(
+      135deg,
+      oklch(0.1889 0.0156 295.5649),
+      oklch(0.2389 0.0234 295.5649)
+    );
+    border: 1px solid oklch(0.2889 0.0234 295.5649);
+    transition: all 0.3s ease;
+  }
+
+  .monster-card:hover {
+    border-color: oklch(0.6368 0.2078 25.3313);
+    box-shadow: 0 4px 20px oklch(0.6368 0.2078 25.3313 / 0.2);
+    transform: translateY(-2px);
+  }
+
+  .note-item {
+    background: linear-gradient(
+      135deg,
+      oklch(0.2889 0.0234 295.5649),
+      oklch(0.2389 0.0156 295.5649)
+    );
+    border: 1px solid oklch(0.3289 0.0312 295.5649);
+    transition: all 0.3s ease;
+  }
+
+  .note-item:hover {
+    border-color: oklch(0.6056 0.2189 292.7172 / 0.5);
+    box-shadow: 0 2px 12px oklch(0.6056 0.2189 292.7172 / 0.1);
+  }
+}
+
+@keyframes pulse-arcane {
+  0%,
+  100% {
+    box-shadow: 0 0 25px oklch(0.6056 0.2189 292.7172 / 0.3);
+  }
+  50% {
+    box-shadow:
+      0 0 35px oklch(0.6056 0.2189 292.7172 / 0.5),
+      0 0 70px oklch(0.6056 0.2189 292.7172 / 0.2);
   }
 }
 

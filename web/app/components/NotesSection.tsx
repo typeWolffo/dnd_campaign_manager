@@ -7,23 +7,10 @@ import { cn } from "~/lib/utils";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
+import type { GetApiRoomsByIdNotesData } from "~/api/data-contracts";
 
-interface NoteSection {
-  id?: string;
-  content: string;
-  isPublic: boolean;
-  orderIndex: number;
-}
-
-interface Note {
-  id: string;
-  title: string;
-  obsidianPath: string;
-  lastSync: string;
-  createdAt: string;
-  updatedAt: string;
-  sections: NoteSection[];
-}
+type Note = GetApiRoomsByIdNotesData[number];
+type NoteSection = Note["sections"][number];
 
 interface NoteWithFileName extends Note {
   fileName: string;
@@ -289,6 +276,8 @@ export function NotesSection({ roomId, isGM }: NotesSectionProps) {
   }, [selectedNoteId, notes]);
 
   const { data: selectedNoteImages } = useNoteImages(roomId, selectedNoteId || "");
+
+  console.log(notes);
 
   // Simple note selection with folder expansion
   const handleNoteSelect = (note: Note) => {

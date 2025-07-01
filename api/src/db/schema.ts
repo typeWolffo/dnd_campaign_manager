@@ -10,6 +10,11 @@ import {
   uniqueIndex
 } from "drizzle-orm/pg-core";
 
+const timestamps = {
+  createdAt: timestamp("created_at", { withTimezone: true, mode: "string", precision: 3 }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true, mode: "string", precision: 3 }).defaultNow().notNull(),
+}
+
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name"),
@@ -48,23 +53,35 @@ export const accounts = pgTable("accounts", {
 });
 
 export const verificationTokens = pgTable("verification_tokens", {
+  ...timestamps,
   id: uuid("id").primaryKey().defaultRandom(),
   identifier: text("identifier").notNull(),
   value: text("value").notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  expiresAt: timestamp("expires_at", { withTimezone: true, mode: "string", precision: 3 }).notNull(),
 });
+
+export const apiTokens = pgTable("api_tokens", {
+  ...timestamps,
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  token: text("token").notNull().unique(),
+  name: text("name").notNull(), // "Obsidian Plugin", "Mobile App", etc.
+  permissions: text("permissions").array().default(['read', 'write']), // Array of permissions
+  lastUsedAt: timestamp("last_used_at", { withTimezone: true, mode: "string", precision: 3 }),
+  expiresAt: timestamp("expires_at", { withTimezone: true, mode: "string", precision: 3 }),
+}, (table) => [
+  index("api_tokens_user_id_idx").on(table.userId),
+  index("api_tokens_token_idx").on(table.token),
+]);
 
 export const rooms = pgTable(
   "rooms",
   {
+    ...timestamps,
     id: uuid("id").primaryKey().defaultRandom(),
     name: varchar("name", { length: 255 }).notNull(),
     description: text("description"),
     gmId: uuid("gm_id").references(() => users.id, { onDelete: "cascade" }),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (table) => [
     index("rooms_gm_id_idx").on(table.gmId),
@@ -74,11 +91,12 @@ export const rooms = pgTable(
 export const roomMembers = pgTable(
   "room_members",
   {
+    ...timestamps,
     id: uuid("id").primaryKey().defaultRandom(),
     roomId: uuid("room_id").references(() => rooms.id, { onDelete: "cascade" }).notNull(),
     userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
     role: varchar("role", { length: 50 }).notNull().default("player"),
-    joinedAt: timestamp("joined_at").defaultNow().notNull(),
+    joinedAt: timestamp("joined_at", { withTimezone: true, mode: "string", precision: 3 }).defaultNow().notNull(),
   },
   (table) => [
     index("room_members_room_id_idx").on(table.roomId),
@@ -90,14 +108,14 @@ export const roomMembers = pgTable(
 export const roomInvitations = pgTable(
   "room_invitations",
   {
+    ...timestamps,
     id: uuid("id").primaryKey().defaultRandom(),
     roomId: uuid("room_id").references(() => rooms.id, { onDelete: "cascade" }).notNull(),
     email: varchar("email", { length: 255 }).notNull(),
     invitedBy: uuid("invited_by").references(() => users.id, { onDelete: "cascade" }).notNull(),
     status: varchar("status", { length: 50 }).notNull().default("pending"),
     token: varchar("token", { length: 255 }).notNull().unique(),
-    expiresAt: timestamp("expires_at").notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true, mode: "string", precision: 3 }).notNull(),
   },
   (table) => [
     index("room_invitations_room_id_idx").on(table.roomId),
@@ -109,14 +127,13 @@ export const roomInvitations = pgTable(
 export const notes = pgTable(
   "notes",
   {
+    ...timestamps,
     id: uuid("id").primaryKey().defaultRandom(),
     roomId: uuid("room_id").references(() => rooms.id, { onDelete: "cascade" }).notNull(),
     title: varchar("title", { length: 500 }).notNull(),
     content: text("content").notNull(),
-    obsidianPath: varchar("obsidian_path", { length: 1000 }),
-    lastSync: timestamp("last_sync"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    obsidianPath: varchar("obsidian_path", { length: 1000 }).notNull().default(""),
+    lastSync: timestamp("last_sync", { withTimezone: true, mode: "string", precision: 3 }),
   },
   (table) => [
     index("notes_room_id_idx").on(table.roomId),
@@ -127,12 +144,12 @@ export const notes = pgTable(
 export const noteSections = pgTable(
   "note_sections",
   {
+    ...timestamps,
     id: uuid("id").primaryKey().defaultRandom(),
     noteId: uuid("note_id").references(() => notes.id, { onDelete: "cascade" }).notNull(),
     content: text("content").notNull(),
     isPublic: boolean("is_public").notNull().default(false),
     orderIndex: integer("order_index").notNull().default(0),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [
     index("note_sections_note_id_idx").on(table.noteId),
@@ -144,6 +161,7 @@ export const noteSections = pgTable(
 export const noteImages = pgTable(
   "note_images",
   {
+    ...timestamps,
     id: uuid("id").primaryKey().defaultRandom(),
     noteId: uuid("note_id").references(() => notes.id, { onDelete: "cascade" }).notNull(),
     filename: varchar("filename", { length: 255 }).notNull(),
@@ -151,7 +169,6 @@ export const noteImages = pgTable(
     s3Key: varchar("s3_key", { length: 500 }).notNull(),
     fileSize: integer("file_size").notNull(),
     mimeType: varchar("mime_type", { length: 100 }).notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [
     index("note_images_note_id_idx").on(table.noteId),

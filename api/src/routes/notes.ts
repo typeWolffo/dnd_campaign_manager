@@ -4,6 +4,8 @@ import { notes, noteSections, rooms, roomMembers } from "../db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { auth } from "../auth/config";
 import { broadcastToRoom } from "../lib/websocket-utils";
+import { getAuthFromRequest } from "../lib/auth-middleware";
+import { createSelectSchema } from "drizzle-typebox";
 
 const RoomIdSchema = t.Object({
   id: t.String(),
@@ -32,12 +34,31 @@ const CreateNoteWithSectionsSchema = t.Object({
 
 const UpdateNoteWithSectionsSchema = t.Partial(CreateNoteWithSectionsSchema);
 
+
+const noteSchema = createSelectSchema(notes, {
+  content: t.Optional(t.String()) // Make content optional since we don't always return it
+})
+const noteSectionSchema = createSelectSchema(noteSections)
+const noteSchemaWithSections = t.Object({
+  ...noteSchema.properties,
+  sections: t.Array(noteSectionSchema),
+})
+
+const CreateNoteResponseSchema = t.Object({
+  id: t.String(),
+  created: t.Optional(t.Boolean()),
+  updated: t.Optional(t.Boolean())
+});
+
+const ErrorResponseSchema = t.Object({
+  error: t.String(),
+  message: t.Optional(t.String())
+});
+
 export const notesRouter = new Elysia({ prefix: "/rooms" })
   .derive(async ({ request }: Context) => {
-    const session = await auth.api.getSession({
-      headers: request.headers,
-    });
-    return { auth: session };
+    const authSession = await getAuthFromRequest(request);
+    return { auth: authSession };
   })
 
   .get("/:id/notes", async ({ params, auth }) => {
@@ -80,6 +101,7 @@ export const notesRouter = new Elysia({ prefix: "/rooms" })
         lastSync: notes.lastSync,
         createdAt: notes.createdAt,
         updatedAt: notes.updatedAt,
+        roomId: notes.roomId,
         sectionId: noteSections.id,
         content: noteSections.content,
         isPublic: noteSections.isPublic,
@@ -103,6 +125,7 @@ export const notesRouter = new Elysia({ prefix: "/rooms" })
           lastSync: row.lastSync,
           createdAt: row.createdAt,
           updatedAt: row.updatedAt,
+          roomId: row.roomId,
           sections: [],
         });
       }
@@ -114,6 +137,9 @@ export const notesRouter = new Elysia({ prefix: "/rooms" })
             content: row.content,
             isPublic: row.isPublic,
             orderIndex: row.orderIndex,
+            noteId: row.id,
+            createdAt: row.createdAt,
+            updatedAt: row.updatedAt,
           });
         }
       }
@@ -122,6 +148,7 @@ export const notesRouter = new Elysia({ prefix: "/rooms" })
     return Array.from(notesMap.values());
   }, {
     params: RoomIdSchema,
+    response: t.Array(noteSchemaWithSections)
   })
 
   .post("/:id/notes", async ({ params, body, auth }) => {
@@ -160,8 +187,8 @@ export const notesRouter = new Elysia({ prefix: "/rooms" })
         .update(notes)
         .set({
           title: body.title,
-          lastSync: new Date(),
-          updatedAt: new Date(),
+          lastSync: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         })
         .where(eq(notes.id, existingNote.id));
 
@@ -195,7 +222,7 @@ export const notesRouter = new Elysia({ prefix: "/rooms" })
           title: body.title,
           content: "",
           obsidianPath: body.obsidianPath,
-          lastSync: new Date(),
+          lastSync: new Date().toISOString(),
         })
         .returning();
 
@@ -221,6 +248,16 @@ export const notesRouter = new Elysia({ prefix: "/rooms" })
   }, {
     params: RoomIdSchema,
     body: CreateNoteWithSectionsSchema,
+    response: {
+      200: CreateNoteResponseSchema,
+      401: ErrorResponseSchema,
+      403: ErrorResponseSchema
+    },
+    detail: {
+      tags: ['Notes'],
+      summary: 'Create note',
+      description: 'Create a new note with sections'
+    }
   })
 
   .put("/:id/notes/:noteId", async ({ params, body, auth }) => {
@@ -248,8 +285,8 @@ export const notesRouter = new Elysia({ prefix: "/rooms" })
       .set({
         ...(body.title && { title: body.title }),
         ...(body.obsidianPath && { obsidianPath: body.obsidianPath }),
-        lastSync: new Date(),
-        updatedAt: new Date(),
+        lastSync: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       })
       .where(eq(notes.id, params.noteId));
 
@@ -280,6 +317,17 @@ export const notesRouter = new Elysia({ prefix: "/rooms" })
   }, {
     params: NoteIdSchema,
     body: UpdateNoteWithSectionsSchema,
+    response: {
+      200: t.Object({ success: t.Boolean() }),
+      401: ErrorResponseSchema,
+      403: ErrorResponseSchema,
+      404: ErrorResponseSchema
+    },
+    detail: {
+      tags: ['Notes'],
+      summary: 'Update note',
+      description: 'Update an existing note'
+    }
   })
 
   .delete("/:id/notes/:noteId", async ({ params, auth }) => {
@@ -315,4 +363,15 @@ export const notesRouter = new Elysia({ prefix: "/rooms" })
     return { success: true };
   }, {
     params: NoteIdSchema,
+    response: {
+      200: t.Object({ success: t.Boolean() }),
+      401: ErrorResponseSchema,
+      403: ErrorResponseSchema,
+      404: ErrorResponseSchema
+    },
+    detail: {
+      tags: ['Notes'],
+      summary: 'Delete note',
+      description: 'Delete a note'
+    }
   });

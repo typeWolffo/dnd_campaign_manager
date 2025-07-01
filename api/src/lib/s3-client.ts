@@ -53,10 +53,11 @@ export const uploadImage = async (
 
   await s3Client.send(command)
 
+  // For upload response, generate a longer-lived URL (7 days)
   const url = await getSignedUrl(s3Client, new GetObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,
-  }), { expiresIn: 3600 }) // 1 hour
+  }), { expiresIn: 604800 }) // 7 days
 
   return { key, url }
 }
@@ -67,7 +68,24 @@ export const getImageUrl = async (key: string): Promise<string> => {
     Key: key,
   })
 
-  return await getSignedUrl(s3Client, command, { expiresIn: 3600 })
+  // Generate 7-day signed URLs instead of 1 hour
+  return await getSignedUrl(s3Client, command, { expiresIn: 604800 })
+}
+
+// New function to get raw image data for proxy endpoint
+export const getImageData = async (key: string): Promise<{ data: Buffer; contentType: string | undefined }> => {
+  const command = new GetObjectCommand({
+    Bucket: BUCKET_NAME,
+    Key: key,
+  })
+
+  const response = await s3Client.send(command)
+  const data = Buffer.from(await response.Body!.transformToByteArray())
+
+  return {
+    data,
+    contentType: response.ContentType
+  }
 }
 
 export { s3Client, BUCKET_NAME }

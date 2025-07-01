@@ -1,10 +1,11 @@
 {
-	"id": "dnd-campaign-manager",
-	"name": "D&D Campaign Manager",
+	"id": "Grimbane-obsidian",
+	"name": "Grimbane",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Publish notes to your D&D campaign using [PUBLIC] markers. Sync with campaign management platform.",
-	"author": "D&D Campaign Manager",
-	"authorUrl": "https://github.com/your-repo/dnd-campaign-manager",
+	"description": "🔒 PRIVACY NOTICE: Publishes notes to external campaign servers using [PUBLIC] markers. Only marked content is transmitted. Uses secure API tokens.",
+	"author": "Grimbane",
+	"authorUrl": "https://github.com/Grimbane-app",
+	"repo": "https://github.com/Grimbane-app/Grimbane-obsidian",
 	"isDesktopOnly": false
 }

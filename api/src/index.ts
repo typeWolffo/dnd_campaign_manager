@@ -8,8 +8,10 @@ import { roomsRouter } from "./routes/rooms";
 import { notesRouter } from "./routes/notes";
 import { websocketRouter } from "./routes/websocket";
 import { imagesRouter } from "./routes/images";
+import { apiTokensRouter } from "./routes/api-tokens";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { db } from './db/connection';
+import { getAuthFromRequest } from './lib/auth-middleware';
 
 
 // async function runMigrations() {
@@ -29,16 +31,16 @@ const betterAuth = new Elysia({ name: "better-auth" })
   .mount(auth.handler)
   .macro({
     auth: {
-      async resolve({ status, request: { headers } }) {
-        const session = await auth.api.getSession({
-          headers,
-        });
+      async resolve({ status, request }) {
+        const authSession = await getAuthFromRequest(request);
 
-        if (!session) return status(401);
+        if (!authSession) return status(401);
 
         return {
-          user: session.user,
-          session: session.session,
+          user: authSession.user,
+          session: authSession.session,
+          authType: authSession.authType,
+          permissions: authSession.permissions,
         };
       },
     },
@@ -50,22 +52,54 @@ const app = new Elysia({ prefix: "/api" })
   .use(cors({
     origin: [
      process.env.APP_URL || '',
-     "app://obsidian.md"
+     "app://obsidian.md",
+     "http://192.168.1.100:8081"
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
     exposeHeaders: ["Set-Cookie"],
   }))
-  .use(swagger())
+  .use(swagger({
+    documentation: {
+      info: {
+        title: 'D&D Campaign Manager API',
+        version: '1.0.0',
+        description: 'API for managing D&D campaigns, notes, and rooms'
+      },
+      tags: [
+        { name: 'Notes', description: 'Note management endpoints' },
+        { name: 'Rooms', description: 'Room management endpoints' },
+        { name: 'Images', description: 'Image management endpoints' },
+        { name: 'API Tokens', description: 'API token management endpoints' }
+      ]
+    },
+    swaggerOptions: {
+      persistAuthorization: true
+    }
+  }))
   .use(websocketRouter)
   .use(betterAuth)
   .use(roomsRouter)
   .use(notesRouter)
   .use(imagesRouter)
+  .use(apiTokensRouter)
   .get("/", () => "D&D Campaign Manager API")
   .get("/health", () => ({ status: "ok", timestamp: new Date().toISOString() }))
   .get("/user", ({ user }) => user, {
+    auth: true,
+  })
+  // Add session endpoint for plugin compatibility
+  .get("/auth/session", ({ user, authType, permissions }) => {
+    if (!user) {
+      throw new Error("Unauthorized");
+    }
+    return {
+      user,
+      authType,
+      permissions,
+    };
+  }, {
     auth: true,
   }).onStart(async () => {
     if(process.env.NODE_ENV === 'production') {

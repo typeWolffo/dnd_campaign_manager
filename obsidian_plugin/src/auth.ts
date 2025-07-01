@@ -18,31 +18,21 @@ export class CampaignAPI {
 
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
-      ...(options.headers),
+      'Authorization': `Bearer ${this.settings.apiToken}`,
     };
-
-    if (this.sessionCookie) {
-      // @ts-expect-error - Cookie is not a valid property of HeadersInit
-      headers.Cookie = this.sessionCookie;
-    }
 
     try {
       const response = await requestUrl({
         url,
-        method: options.method,
-        // @ts-expect-error - HeadersInit is not a valid property of requestUrl
+        method: options.method as any || 'GET',
         headers,
         body: options.body as string,
       });
 
-      const setCookie = response.headers['set-cookie'];
-      if (setCookie) {
-        this.sessionCookie = setCookie;
-      }
-
       return response.json;
     } catch (error) {
-      console.error('API request failed:', error);
+      console.error('❌ API request failed:', error);
+      new Notice(`API request failed: ${error.message}`);
       throw error;
     }
   }
@@ -50,26 +40,19 @@ export class CampaignAPI {
   private async makeFormDataRequest(path: string, formData: FormData): Promise<any> {
     const url = `${this.settings.apiUrl}${path}`;
 
-    const headers: HeadersInit = {};
-
-    if (this.sessionCookie) {
-      headers['Cookie'] = this.sessionCookie;
-    }
+    const headers: HeadersInit = {
+      'Authorization': `Bearer ${this.settings.apiToken}`,
+    };
 
     try {
+      // Convert FormData to a format requestUrl can handle
+      // For file uploads, we need to use the browser's fetch as requestUrl doesn't support FormData
       const response = await fetch(url, {
         method: 'POST',
         body: formData,
         headers,
         credentials: 'include',
       });
-
-      const setCookie = response.headers.get('set-cookie');
-      if (setCookie) {
-        this.sessionCookie = setCookie;
-      }
-
-      new Notice('bbbbbbbbbb ' + response);
 
       if (!response.ok) {
         const responseText = await response.text();
@@ -80,29 +63,16 @@ export class CampaignAPI {
       return jsonResponse;
     } catch (error) {
       console.error('FormData request failed:', error);
-      new Notice('aaaaaaaaa ' + error);
       throw error;
     }
   }
 
-  async login(): Promise<boolean> {
+  async validateToken(): Promise<boolean> {
     try {
-      const response = await this.makeRequest('/api/auth/sign-in/email', {
-        method: 'POST',
-        body: JSON.stringify({
-          email: this.settings.email,
-          password: this.settings.password,
-        }),
-      });
-
-      if (response.user) {
-        new Notice('Successfully logged in to Campaign Manager');
-        return true;
-      }
-
-      return false;
+      const response = await this.makeRequest('/auth/session');
+      return !!response.user;
     } catch (error) {
-      new Notice('Login failed: ' + error.message);
+      new Notice('Invalid API token');
       return false;
     }
   }
@@ -167,8 +137,7 @@ export class CampaignAPI {
 
   async testConnection(): Promise<boolean> {
     try {
-      await this.makeRequest('/health');
-      return true;
+      return await this.validateToken();
     } catch (error) {
       return false;
     }

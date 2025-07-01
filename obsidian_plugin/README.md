@@ -1,94 +1,103 @@
-# Obsidian Sample Plugin
+# Grimbane - Obsidian Plugin
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+🔒 **IMPORTANT PRIVACY NOTICE**
+This plugin connects to external servers and transmits your note content. Please read the security information below.
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+## Overview
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open Sample Modal" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+This plugin integrates Obsidian with the Grimbane platform, allowing you to selectively publish notes using `[PUBLIC]` markers.
 
-## First time developing plugins?
+## 🛡️ Security & Privacy
 
-Quick starting guide for new plugin devs:
+### Data Transmission
+- **External Server Connection**: This plugin sends data to a campaign management server
+- **Content Sharing**: Notes marked with `[PUBLIC]` blocks are transmitted to external servers
+- **Image Upload**: Images in public sections are uploaded to external storage
+- **API Token**: Uses secure API tokens instead of passwords
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+### What Data is Sent
+- ✅ Only content within `[PUBLIC]` markers
+- ✅ Images referenced in public sections
+- ✅ Note titles and metadata
+- ❌ Private content outside `[PUBLIC]` blocks is NEVER sent
 
-## Releasing new releases
+### Security Features
+- 🔐 API token authentication (no password storage)
+- 🔐 Encrypted token storage on device
+- 🔐 HTTPS connections required
+- 🔐 Session-based authentication
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+### Before Using This Plugin
+1. **Review your server setup** - Ensure your campaign server is secure
+2. **Check public markers** - Only content in `[PUBLIC]` blocks will be shared
+3. **Understand data flow** - Your notes will be stored on the campaign server
+4. **Get API token** - Obtain a secure API token from your campaign manager
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+## Setup
 
-## Adding your plugin to the community plugin list
+1. Install the plugin
+2. Go to Settings → Grimbane
+3. **Generate API Token**:
+   - Log into your campaign manager web interface
+   - Go to Settings → API Tokens
+   - Create a new token with appropriate permissions
+4. Enter your API token (NOT your password)
+5. Test connection
+6. Select your campaign room
 
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+## Usage
 
-## How to use
+### Publishing Notes
+Mark content for publication using `[PUBLIC]` blocks:
 
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
+```markdown
+This content stays private in Obsidian
 
-## Manually installing the plugin
+[PUBLIC]
+This content will be shared with your campaign
+- Including images: ![map](dungeon-map.png)
+- And any other markdown
+[!PUBLIC]
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
-
-## Improve code quality with eslint (optional)
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- To use eslint with this project, make sure to install eslint from terminal:
-  - `npm install -g eslint`
-- To use eslint to analyze this project use this command:
-  - `eslint main.ts`
-  - eslint will then create a report with suggestions for code improvement by file and line number.
-- If your source code is in a folder, such as `src`, you can use eslint with this command to analyze all files in that folder:
-  - `eslint .\src\`
-
-## Funding URL
-
-You can include funding URLs where people who use your plugin can financially support it.
-
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
-
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
+This content is private again
 ```
 
-If you have multiple URLs, you can also do:
+### Commands
+- **Publish note to campaign** - Publishes current note
+- **Preview public content** - Shows what will be published
+- **Insert PUBLIC block** - Adds public markers
+- **Wrap selection in PUBLIC block** - Wraps selected text
 
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
-```
+## Data Storage
 
-## API Documentation
+- **Local**: API tokens are encrypted before storage
+- **Remote**: Public content is stored on your campaign server
+- **Images**: Uploaded to campaign server storage
 
-See https://github.com/obsidianmd/obsidian-api
+## Troubleshooting
+
+### Connection Issues
+- Verify API token is correct
+- Check server URL format: `https://your-server.com`
+- Ensure server is running and accessible
+
+### Security Concerns
+- Use HTTPS-only servers in production
+- Regularly rotate API tokens
+- Review published content periodically
+- Consider self-hosting for maximum privacy
+
+## Development
+
+Built with modern web standards:
+- TypeScript for type safety
+- ESBuild for fast compilation
+- Obsidian Plugin API
+
+## Support
+
+For issues:
+1. Check server logs
+2. Verify API token permissions
+3. Test connection in settings
+4. Review public content markers

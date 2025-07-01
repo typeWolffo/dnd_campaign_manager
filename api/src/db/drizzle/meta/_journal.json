@@ -15,6 +15,41 @@
       "when": 1750536812581,
       "tag": "0001_superb_energizer",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1751218931178,
+      "tag": "0002_create_api_tokens_table",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1751229785367,
+      "tag": "0003_change_timestamps_options",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1751230498105,
+      "tag": "0004_change_notes_timestamps_options",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1751231168535,
+      "tag": "0005_change_obsidianPath_to_notNull",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1751235592885,
+      "tag": "0006_silent_steve_rogers",
+      "breakpoints": true
     }
   ]
 }

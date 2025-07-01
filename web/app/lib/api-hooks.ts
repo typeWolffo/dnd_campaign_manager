@@ -2,13 +2,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "./api";
 import { queryKeys } from "./query-keys";
 import type { CreateRoomFormData, AddMemberFormData } from "./schemas";
+import { ApiClient } from "~/api/api-client";
 
 // Rooms hooks
 export const useRooms = () => {
   return useQuery({
     queryKey: queryKeys.rooms.all.queryKey,
     queryFn: async () => {
-      const response = await apiClient.api.rooms.get();
+      // const response = await apiClient.api.rooms.get();
+      const response = await ApiClient.getApiRooms();
       if (response.error) throw new Error("Failed to fetch rooms");
       return response.data;
     },
@@ -19,7 +21,7 @@ export const useRoom = (roomId: string) => {
   return useQuery({
     queryKey: queryKeys.rooms.byId(roomId).queryKey,
     queryFn: async () => {
-      const response = await apiClient.api.rooms({ id: roomId }).get();
+      const response = await ApiClient.getApiRoomsById(roomId);
       return response.data;
     },
     enabled: !!roomId,
@@ -117,8 +119,8 @@ export const useRoomNotes = (roomId: string) => {
   return useQuery({
     queryKey: queryKeys.notes.byRoomId(roomId).queryKey,
     queryFn: async () => {
-      const response = await apiClient.api.rooms({ id: roomId }).notes.get();
-      if (response.error) throw new Error("Failed to fetch notes");
+      const response = await ApiClient.getApiRoomsByIdNotes(roomId);
+
       return response.data;
     },
     enabled: !!roomId,
@@ -139,5 +141,58 @@ export const useNoteImages = (roomId: string, noteId: string) => {
       return response.json();
     },
     enabled: !!roomId && !!noteId,
+  });
+};
+
+// API Tokens hooks
+export const useApiTokens = () => {
+  return useQuery({
+    queryKey: queryKeys.auth.apiTokens.queryKey,
+    queryFn: async () => {
+      const response = await apiClient.api["api-tokens"].get();
+      return response.data?.tokens || [];
+    },
+  });
+};
+
+export const useCreateApiToken = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: { name: string; permissions?: string[]; expiresAt?: Date }) => {
+      const response = await apiClient.api["api-tokens"].post(data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth.apiTokens.queryKey });
+    },
+  });
+};
+
+export const useDeleteApiToken = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (tokenId: string) => {
+      const response = await apiClient.api["api-tokens"]({ tokenId }).delete();
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth.apiTokens.queryKey });
+    },
+  });
+};
+
+export const useRevokeAllApiTokens = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const response = await apiClient.api["api-tokens"].delete();
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth.apiTokens.queryKey });
+    },
   });
 };

@@ -1,0 +1,1 @@
+ALTER TABLE "notes" ALTER COLUMN "last_sync" SET DATA TYPE timestamp(3) with time zone;

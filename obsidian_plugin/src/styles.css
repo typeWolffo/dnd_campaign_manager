@@ -123,3 +123,37 @@ If your plugin does not need CSS, delete this file.
   font-size: 0.9em;
   line-height: 1.4;
 }
+
+/* Privacy Consent Modal */
+.privacy-consent-modal {
+  max-width: 600px;
+}
+
+.privacy-warning {
+  background: var(--background-primary-alt);
+  border: 1px solid var(--color-orange);
+  border-radius: 6px;
+  padding: 16px;
+  margin: 16px 0;
+}
+
+.privacy-warning h3 {
+  margin-top: 0;
+  color: var(--color-orange);
+}
+
+.privacy-warning ul {
+  margin: 12px 0;
+  padding-left: 20px;
+}
+
+.privacy-warning li {
+  margin: 8px 0;
+  color: var(--text-normal);
+}
+
+/* Settings */
+.setting-item-heading.danger-zone {
+  color: var(--color-red);
+  margin-top: 2em;
+}

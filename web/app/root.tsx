@@ -10,11 +10,8 @@ import {
 import type { Route } from "./+types/root";
 import { QueryProvider } from "./lib/query-client";
 import { WebSocketProvider } from "./lib/websocket-context";
-import { InstallPrompt } from "./components/InstallPrompt";
-import { initializePWA } from "./lib/pwa";
 import "./app.css";
 import type { ReactNode } from "react";
-import { useEffect } from "react";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -27,8 +24,6 @@ export const links: Route.LinksFunction = () => [
     rel: "stylesheet",
     href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
   },
-  // PWA manifest
-  { rel: "manifest", href: "/manifest.json" },
   // Apple touch icons
   { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
   { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-32x32.png" },
@@ -41,13 +36,6 @@ export function Layout({ children }: { children: ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-        {/* PWA Meta Tags */}
-        <meta name="theme-color" content="#89878c" />
-        <meta name="background-color" content="#7a8285" />
-
-        {/* Version for cache busting */}
-        <meta name="app-version" content={`${Date.now()}`} />
 
         {/* iOS Specific */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -82,15 +70,10 @@ export function Layout({ children }: { children: ReactNode }) {
 }
 
 export default function App() {
-  useEffect(() => {
-    initializePWA();
-  }, []);
-
   return (
     <QueryProvider>
       <WebSocketProvider>
         <Outlet />
-        <InstallPrompt />
       </WebSocketProvider>
     </QueryProvider>
   );

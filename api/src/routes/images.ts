@@ -1,10 +1,11 @@
 import { Elysia, t, type Context } from 'elysia'
-import { uploadImage, getImageUrl } from '../lib/s3-client'
+import { uploadImage, getImageUrl, getImageData } from '../lib/s3-client'
 import { db } from '../db/connection'
 import { noteImages, notes, roomMembers } from '../db/schema'
 import { eq, and } from 'drizzle-orm'
 import { auth } from '../auth/config'
 import crypto from 'crypto'
+import { getAuthFromRequest } from '../lib/auth-middleware'
 
 const UploadParamsSchema = t.Object({
   roomId: t.String(),
@@ -22,11 +23,57 @@ const ImageUrlParamsSchema = t.Object({
 
 export const imagesRouter = new Elysia({ prefix: "/images" })
   .derive(async ({ request }: Context) => {
-    const session = await auth.api.getSession({
-      headers: request.headers,
-    });
-    return { auth: session };
+    const authSession = await getAuthFromRequest(request);
+    return { auth: authSession };
   })
+
+  // New proxy endpoint for serving images directly
+  .get('/serve/:imageId', async ({ params: { imageId }, auth, set }) => {
+    if (!auth?.user) {
+      set.status = 401
+      return { error: 'Unauthorized' }
+    }
+
+    try {
+      // Get image metadata and check permissions
+      const image = await db.select({
+        s3Key: noteImages.s3Key,
+        mimeType: noteImages.mimeType,
+        noteId: noteImages.noteId,
+      }).from(noteImages)
+        .innerJoin(notes, eq(notes.id, noteImages.noteId))
+        .innerJoin(roomMembers, and(
+          eq(roomMembers.roomId, notes.roomId),
+          eq(roomMembers.userId, auth.user.id)
+        ))
+        .where(eq(noteImages.id, imageId))
+        .limit(1)
+
+      if (image.length === 0) {
+        set.status = 404
+        return { error: 'Image not found or access denied' }
+      }
+
+      // Get image data from S3
+      const { data, contentType } = await getImageData(image[0].s3Key)
+
+      // Set appropriate headers
+      set.headers['Content-Type'] = contentType || image[0].mimeType || 'application/octet-stream'
+      set.headers['Cache-Control'] = 'public, max-age=86400' // Cache for 24 hours
+      set.headers['ETag'] = `"${image[0].s3Key}"`
+
+      return new Response(data)
+    } catch (error) {
+      console.error('Failed to serve image:', error)
+      set.status = 500
+      return { error: 'Failed to serve image' }
+    }
+  }, {
+    params: t.Object({
+      imageId: t.String(),
+    })
+  })
+
   .post('/upload/:roomId/:noteId', async ({ params: { roomId, noteId }, body, auth, set }) => {
     console.log('🖼️ Image upload request received:', { roomId, noteId });
     console.log('🔐 Auth status:', auth ? 'Present' : 'Missing');
@@ -63,7 +110,7 @@ export const imagesRouter = new Elysia({ prefix: "/images" })
         const buffer = Buffer.from(await file.arrayBuffer())
 
         // Upload to MinIO
-        const { key, url } = await uploadImage(roomId, noteId, filename, buffer, file.type)
+        const { key } = await uploadImage(roomId, noteId, filename, buffer, file.type)
 
         // Save metadata to database
         const imageRecord = await db.insert(noteImages).values({
@@ -75,11 +122,14 @@ export const imagesRouter = new Elysia({ prefix: "/images" })
           mimeType: file.type,
         }).returning()
 
+        // Return proxy URL instead of signed URL
+        const proxyUrl = `${process.env.API_URL || 'http://localhost:4000'}/api/images/serve/${imageRecord[0].id}`
+
         uploadedImages.push({
           id: imageRecord[0].id,
           filename,
           originalName: file.name,
-          url,
+          url: proxyUrl,
           size: buffer.length,
         })
       } catch (error) {
@@ -123,21 +173,19 @@ export const imagesRouter = new Elysia({ prefix: "/images" })
     const images = await db.select().from(noteImages)
       .where(eq(noteImages.noteId, noteId))
 
-    // Generate presigned URLs
-    const imagesWithUrls = await Promise.all(
-      images.map(async (image) => {
-        const url = await getImageUrl(image.s3Key)
-        return {
-          id: image.id,
-          filename: image.filename,
-          originalName: image.originalName,
-          url,
-          size: image.fileSize,
-          mimeType: image.mimeType,
-          createdAt: image.createdAt,
-        }
-      })
-    )
+    // Return proxy URLs instead of signed URLs
+    const imagesWithUrls = images.map((image) => {
+      const proxyUrl = `${process.env.API_URL || 'http://localhost:4000'}/api/images/serve/${image.id}`
+      return {
+        id: image.id,
+        filename: image.filename,
+        originalName: image.originalName,
+        url: proxyUrl,
+        size: image.fileSize,
+        mimeType: image.mimeType,
+        createdAt: image.createdAt,
+      }
+    })
 
     return { images: imagesWithUrls }
   }, {
@@ -168,8 +216,9 @@ export const imagesRouter = new Elysia({ prefix: "/images" })
       return { error: 'Image not found or access denied' }
     }
 
-    const url = await getImageUrl(image[0].s3Key)
-    return { url }
+    // Return proxy URL instead of signed URL
+    const proxyUrl = `${process.env.API_URL || 'http://localhost:4000'}/api/images/serve/${imageId}`
+    return { url: proxyUrl }
   }, {
     params: ImageUrlParamsSchema
   })

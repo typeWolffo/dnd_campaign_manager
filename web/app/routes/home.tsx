@@ -6,8 +6,11 @@ import { useSession } from "../lib/auth-client";
 
 export function meta(_args: Route.MetaArgs) {
   return [
-    { title: "D&D Campaign Manager" },
-    { name: "description", content: "Manage your D&D campaigns with Obsidian integration" },
+    { title: "Grymlore | Campaign Manager" },
+    {
+      name: "description",
+      content: "Create immersive D&D campaigns with seamless Obsidian integration",
+    },
   ];
 }
 
@@ -15,13 +18,11 @@ export default function Home() {
   const { data: session } = useSession();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-background/95">
+    <div className="min-h-screen bg-dungeon-gradient">
       <div className="container mx-auto px-4 py-16">
         {/* Hero Section */}
         <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6">
-            D&D Campaign Manager
-          </h1>
+          <h1 className="text-4xl md:text-6xl font-bold text-arcane-glow mb-6">Grymlore</h1>
 
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
             Create immersive D&D campaigns with seamless Obsidian integration. Share your

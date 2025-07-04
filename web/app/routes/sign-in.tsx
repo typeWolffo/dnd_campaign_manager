@@ -35,7 +35,7 @@ export default function SignIn() {
     try {
       await signIn.email(data, {
         onSuccess: () => {
-          navigate("/dashboard");
+          navigate("/");
         },
         onError: error => {
           console.error("Sign in error:", error);

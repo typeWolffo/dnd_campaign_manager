@@ -11,7 +11,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "generate:client": "swagger-typescript-api generate --path http://localhost:4000/api/swagger/json -o ./app/api --axios --name generated-api.ts --api-class-name API --extract-request-params --extract-request-body --extract-response-body --extract-response-error --modular"
+    "generate:client": "swagger-typescript-api generate --path http://localhost:4000/swagger/json -o ./app/api --axios --name generated-api.ts --api-class-name API --extract-request-params --extract-request-body --extract-response-body --extract-response-error --modular"
   },
   "dependencies": {
     "@elysiajs/eden": "^1.3.2",
@@ -20,6 +20,7 @@
     "@radix-ui/react-avatar": "^1.1.10",
     "@radix-ui/react-dialog": "^1.1.14",
     "@radix-ui/react-label": "^2.1.7",
+    "@radix-ui/react-select": "^2.2.5",
     "@radix-ui/react-slot": "^1.2.3",
     "@react-router/node": "^7.5.3",
     "@react-router/serve": "^7.5.3",

@@ -19,7 +19,9 @@
     "drizzle-orm": "^0.44.2",
     "drizzle-typebox": "^0.3.3",
     "elysia": "latest",
-    "pg": "^8.16.1"
+    "inversify": "^7.5.4",
+    "pg": "^8.16.1",
+    "reflect-metadata": "^0.2.2"
   },
   "devDependencies": {
     "@types/pg": "^8.15.4",

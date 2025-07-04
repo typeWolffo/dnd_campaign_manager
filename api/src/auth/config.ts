@@ -37,7 +37,13 @@ export const auth = betterAuth({
     }),
   },
   plugins: [
-    openAPI(),
+    // Only enable OpenAPI in development to avoid routing conflicts
+    ...(isDev ? [
+      openAPI({
+        path: "/reference",
+        disabled: false,
+      })
+    ] : []),
   ],
   emailAndPassword: {
     enabled: true,

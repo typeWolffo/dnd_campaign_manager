@@ -180,9 +180,11 @@ export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 
 export type Room = typeof rooms.$inferSelect;
+export type RoomMember = typeof roomMembers.$inferSelect;
+export type RoomMemberWithUsername = RoomMember & { userName: string, userEmail: string };
+export type RoomWithMembers = Room & { members: RoomMemberWithUsername[]; isGM: boolean };
 export type NewRoom = typeof rooms.$inferInsert;
 
-export type RoomMember = typeof roomMembers.$inferSelect;
 export type NewRoomMember = typeof roomMembers.$inferInsert;
 
 export type RoomInvitation = typeof roomInvitations.$inferSelect;
@@ -196,3 +198,6 @@ export type NewNoteSection = typeof noteSections.$inferInsert;
 
 export type NoteImage = typeof noteImages.$inferSelect;
 export type NewNoteImage = typeof noteImages.$inferInsert;
+
+export type ApiToken = typeof apiTokens.$inferSelect;
+export type NewApiToken = typeof apiTokens.$inferInsert;

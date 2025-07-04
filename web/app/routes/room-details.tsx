@@ -23,14 +23,22 @@ import {
   TabsList,
   TabsTrigger,
 } from "../components/animate-ui/radix/tabs";
-import { useRemoveMember, useRoom } from "../lib/api-hooks";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
+import { useRemoveMember, useRoom, useRooms } from "../lib/api-hooks";
 import { useSession } from "../lib/auth-client";
 import { useRoomWebSocket } from "../lib/use-websocket";
+import { useLastRoom } from "../lib/use-last-room";
 import type { Route } from "./+types/room-details";
 
 export const clientLoader = async ({ params }: Route.ClientLoaderArgs) => {
   if (!params.roomId) {
-    redirect("/dashboard");
+    redirect("/");
   }
 
   return { roomId: params.roomId };
@@ -40,16 +48,26 @@ export default function RoomDetailsPage() {
   const { roomId } = useLoaderData<typeof clientLoader>();
   const { data: session, isPending: sessionLoading } = useSession();
   const { data: room, isLoading: roomLoading, error: roomError } = useRoom(roomId);
+  const { data: rooms } = useRooms();
   const { status: wsStatus, isConnected } = useRoomWebSocket(roomId);
+  const { setLastRoom } = useLastRoom();
   const navigate = useNavigate();
   const removeMember = useRemoveMember(roomId);
   const [memberToRemove, setMemberToRemove] = useState<{ id: string; name: string } | null>(null);
+
+  console.log(room);
 
   useEffect(() => {
     if (!sessionLoading && !session) {
       navigate("/sign-in");
     }
   }, [session, sessionLoading, navigate]);
+
+  useEffect(() => {
+    if (room) {
+      setLastRoom(room.id);
+    }
+  }, [room, setLastRoom]);
 
   if (sessionLoading || roomLoading) {
     return (
@@ -76,7 +94,7 @@ export default function RoomDetailsPage() {
           </CardHeader>
           <CardContent>
             <Button asChild>
-              <Link to="/dashboard">Back to Dashboard</Link>
+              <Link to="/">Back to Campaigns</Link>
             </Button>
           </CardContent>
         </Card>
@@ -105,7 +123,7 @@ export default function RoomDetailsPage() {
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center space-x-4">
               <Button variant="secondary" asChild>
-                <Link to="/dashboard">← Back</Link>
+                <Link to="/">← Back</Link>
               </Button>
               <div className="flex items-center gap-4">
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{room.name}</h1>
@@ -113,6 +131,20 @@ export default function RoomDetailsPage() {
                   <Badge variant={isGM ? "default" : "secondary"}>
                     {isGM ? "Game Master" : "Player"}
                   </Badge>
+                  {rooms && (
+                    <Select value={roomId} onValueChange={value => navigate(`/rooms/${value}`)}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {rooms.map(r => (
+                          <SelectItem key={r.id} value={r.id}>
+                            {r.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
                 <div
                   className={cn("h-1.5 w-1.5 rounded-full relative", {
@@ -131,13 +163,13 @@ export default function RoomDetailsPage() {
       </header>
 
       {/* Main content */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 rounded-t-2xl h-full">
+      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 rounded-t-2xl h-full">
         <Tabs defaultValue="tab1">
-          <TabsList>
+          <TabsList className="w-full justify-center md:w-auto md:justify-start">
             <TabsTrigger value="tab1">Notes</TabsTrigger>
             <TabsTrigger value="tab2">Room Details</TabsTrigger>
             <TabsTrigger value="tab3">Members</TabsTrigger>
-            <TabsTrigger value="tab4">API Tokens</TabsTrigger>
+            <TabsTrigger value="tab4">Settings</TabsTrigger>
           </TabsList>
           <TabsContents>
             <TabsContent value="tab1">

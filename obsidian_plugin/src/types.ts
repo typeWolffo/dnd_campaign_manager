@@ -1,8 +1,8 @@
 import type {
-  GetApiRoomsByIdData,
-  PostApiRoomsByIdNotesPayload,
-  GetApiRoomsByIdNotesData,
-  PostApiRoomsByIdNotesData,
+  GetApiRoomsByRoomIdData,
+  PostApiRoomsByRoomIdNotesPayload,
+  GetApiRoomsByRoomIdNotesData,
+  PostApiRoomsByRoomIdNotesData,
   GetApiAuthSessionData
 } from './api/data-contracts';
 
@@ -16,20 +16,20 @@ export interface CampaignSettings {
   developerMode: boolean;
 }
 
-export type Room = GetApiRoomsByIdData;
+export type Room = GetApiRoomsByRoomIdData;
 export type AuthResponse = GetApiAuthSessionData;
-export type CreateNotePayload = PostApiRoomsByIdNotesPayload & {
+export type CreateNotePayload = PostApiRoomsByRoomIdNotesPayload & {
   contentHash?: string;
 };
-export type PublishedNote = GetApiRoomsByIdNotesData[0] & {
+export type PublishedNote = GetApiRoomsByRoomIdNotesData[0] & {
   contentHash?: string;
 };
-export type PublishResult = PostApiRoomsByIdNotesData & {
+export type PublishResult = PostApiRoomsByRoomIdNotesData & {
   success: boolean;
   error?: string;
 };
 
-export type NoteSection = PostApiRoomsByIdNotesPayload['sections'][number];
+export type NoteSection = PostApiRoomsByRoomIdNotesPayload['sections'][number];
 
 export interface ImageReference {
   localPath: string;

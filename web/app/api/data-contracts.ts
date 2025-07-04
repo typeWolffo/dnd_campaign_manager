@@ -11,22 +11,32 @@
  */
 
 export type GetApiRoomsData = {
+  createdAt: string;
+  updatedAt: string;
+  /** @format uuid */
   id: string;
+  /** @maxLength 255 */
   name: string;
   description: string | null;
   gmId: string | null;
-  createdAt: string;
-  updatedAt: string;
-  isGM: boolean;
   members: {
+    createdAt: string;
+    updatedAt: string;
+    /** @format uuid */
     id: string;
+    /** @format uuid */
+    roomId: string;
+    /** @format uuid */
     userId: string;
+    /** @maxLength 50 */
     role: string;
     joinedAt: string;
-    userName: string | null;
-    userEmail: string;
   }[];
 }[];
+
+export type GetApiRoomsError = {
+  error: string;
+};
 
 export interface PostApiRoomsPayload {
   createdAt?: string;
@@ -39,74 +49,141 @@ export interface PostApiRoomsPayload {
   gmId?: string | null;
 }
 
-export type PostApiRoomsData = any;
-
-export interface GetApiRoomsByIdData {
+export interface PostApiRoomsData {
+  createdAt: string;
+  updatedAt: string;
+  /** @format uuid */
   id: string;
+  /** @maxLength 255 */
   name: string;
   description: string | null;
   gmId: string | null;
+}
+
+export type PostApiRoomsError = {
+  error: string;
+};
+
+export interface GetApiRoomsByRoomIdData {
   createdAt: string;
   updatedAt: string;
-  isGM: boolean;
+  /** @format uuid */
+  id: string;
+  /** @maxLength 255 */
+  name: string;
+  description: string | null;
+  gmId: string | null;
   members: {
+    createdAt: string;
+    updatedAt: string;
+    /** @format uuid */
     id: string;
+    /** @format uuid */
+    roomId: string;
+    /** @format uuid */
     userId: string;
+    /** @maxLength 50 */
     role: string;
     joinedAt: string;
-    userName: string | null;
-    userEmail: string;
   }[];
 }
 
-export interface PatchApiRoomsByIdPayload {
-  createdAt?: string;
-  updatedAt?: string;
-  /** @format uuid */
-  id?: string;
-  /** @maxLength 255 */
+export type GetApiRoomsByRoomIdError = {
+  error: string;
+};
+
+export interface PatchApiRoomsByRoomIdPayload {
+  /**
+   * @minLength 1
+   * @maxLength 255
+   */
   name?: string;
   description?: string | null;
-  gmId?: string | null;
 }
 
-export type PatchApiRoomsByIdData = any;
-
-export type DeleteApiRoomsByIdData = any;
-
-export interface PostApiRoomsByIdMembersPayload {
-  /**
-   * @minLength 5
-   * @pattern ^[^@\s]+@[^@\s]+\.[^@\s]+$
-   */
-  email: string;
-  /** @default "player" */
-  role?: "player" | "gm";
+export interface PatchApiRoomsByRoomIdData {
+  createdAt: string;
+  updatedAt: string;
+  /** @format uuid */
+  id: string;
+  /** @maxLength 255 */
+  name: string;
+  description: string | null;
+  gmId: string | null;
 }
 
-export type PostApiRoomsByIdMembersData = any;
+export type PatchApiRoomsByRoomIdError = {
+  error: string;
+};
 
-export type DeleteApiRoomsByIdMembersByMemberIdData = any;
-
-export interface GetApiRoomsSearchUsersParams {
-  email: string;
+export interface DeleteApiRoomsByRoomIdData {
+  message: string;
 }
 
-export type GetApiRoomsSearchUsersData = any;
+export type DeleteApiRoomsByRoomIdError = {
+  error: string;
+};
 
-export type GetApiRoomsByIdNotesData = {
+export type GetApiRoomsByRoomIdMembersData = {
   createdAt: string;
   updatedAt: string;
   /** @format uuid */
   id: string;
   /** @format uuid */
   roomId: string;
-  /** @maxLength 500 */
+  /** @format uuid */
+  userId: string;
+  /** @maxLength 50 */
+  role: string;
+  joinedAt: string;
+}[];
+
+export type GetApiRoomsByRoomIdMembersError = {
+  error: string;
+};
+
+export interface PostApiRoomsByRoomIdMembersPayload {
+  userId: string;
+  role?: string;
+}
+
+export interface PostApiRoomsByRoomIdMembersData {
+  member: {
+    createdAt: string;
+    updatedAt: string;
+    /** @format uuid */
+    id: string;
+    /** @format uuid */
+    roomId: string;
+    /** @format uuid */
+    userId: string;
+    /** @maxLength 50 */
+    role: string;
+    joinedAt: string;
+  };
+}
+
+export type PostApiRoomsByRoomIdMembersError = {
+  error: string;
+};
+
+export interface DeleteApiRoomsByRoomIdMembersByMemberIdData {
+  message: string;
+}
+
+export type DeleteApiRoomsByRoomIdMembersByMemberIdError = {
+  error: string;
+};
+
+export type GetApiRoomsByRoomIdNotesData = {
+  id: string;
   title: string;
-  content?: string;
-  /** @maxLength 1000 */
+  content: string;
   obsidianPath: string;
   lastSync: string | null;
+  createdAt: string;
+  updatedAt: string;
+  roomId: string;
   sections: {
     createdAt: string;
     updatedAt: string;
@@ -124,8 +201,18 @@ export type GetApiRoomsByIdNotesData = {
   }[];
 }[];
 
-export interface PostApiRoomsByIdNotesPayload {
+export type GetApiRoomsByRoomIdNotesError = {
+  error: string;
+  message?: string;
+};
+
+export interface PostApiRoomsByRoomIdNotesPayload {
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
   title: string;
+  /** @maxLength 1000 */
   obsidianPath?: string;
   sections: {
     content: string;
@@ -134,19 +221,24 @@ export interface PostApiRoomsByIdNotesPayload {
   }[];
 }
 
-export interface PostApiRoomsByIdNotesData {
+export interface PostApiRoomsByRoomIdNotesData {
   id: string;
   created?: boolean;
   updated?: boolean;
 }
 
-export type PostApiRoomsByIdNotesError = {
+export type PostApiRoomsByRoomIdNotesError = {
   error: string;
   message?: string;
 };
 
-export interface PutApiRoomsByIdNotesByNoteIdPayload {
+export interface PutApiRoomsByRoomIdNotesByNoteIdPayload {
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
   title?: string;
+  /** @maxLength 1000 */
   obsidianPath?: string;
   sections?: {
     content: string;
@@ -155,37 +247,40 @@ export interface PutApiRoomsByIdNotesByNoteIdPayload {
   }[];
 }
 
-export interface PutApiRoomsByIdNotesByNoteIdData {
+export interface PutApiRoomsByRoomIdNotesByNoteIdData {
   success: boolean;
 }
 
-export type PutApiRoomsByIdNotesByNoteIdError = {
+export type PutApiRoomsByRoomIdNotesByNoteIdError = {
   error: string;
   message?: string;
 };
 
-export interface DeleteApiRoomsByIdNotesByNoteIdData {
+export interface DeleteApiRoomsByRoomIdNotesByNoteIdData {
   success: boolean;
 }
 
-export type DeleteApiRoomsByIdNotesByNoteIdError = {
+export type DeleteApiRoomsByRoomIdNotesByNoteIdError = {
   error: string;
   message?: string;
 };
 
-export type GetApiImagesServeByImageIdData = any;
-
-export interface PostApiImagesUploadByRoomIdByNoteIdPayload {
-  files: File | File[];
+export interface GetApiApiTokensData {
+  tokens: {
+    id: string;
+    userId: string;
+    name: string;
+    permissions: string[] | null;
+    lastUsedAt: string | null;
+    expiresAt: string | null;
+    createdAt: string;
+    updatedAt: string;
+  }[];
 }
 
-export type PostApiImagesUploadByRoomIdByNoteIdData = any;
-
-export type GetApiImagesByRoomIdByNoteIdData = any;
-
-export type GetApiImagesUrlByImageIdData = any;
-
-export type GetApiApiTokensData = any;
+export type GetApiApiTokensError = {
+  error: string;
+};
 
 export interface PostApiApiTokensPayload {
   /**
@@ -197,9 +292,33 @@ export interface PostApiApiTokensPayload {
   expiresAt?: string;
 }
 
-export type PostApiApiTokensData = any;
+export interface PostApiApiTokensData {
+  token: {
+    id: string;
+    userId: string;
+    name: string;
+    permissions: string[] | null;
+    lastUsedAt: string | null;
+    expiresAt: string | null;
+    createdAt: string;
+    updatedAt: string;
+  };
+  tokenValue: string;
+  message: string;
+}
 
-export type DeleteApiApiTokensData = any;
+export type PostApiApiTokensError = {
+  error: string;
+};
+
+export interface DeleteApiApiTokensData {
+  message: string;
+  revokedCount: number;
+}
+
+export type DeleteApiApiTokensError = {
+  error: string;
+};
 
 export interface PatchApiApiTokensByTokenIdPayload {
   /**
@@ -209,14 +328,80 @@ export interface PatchApiApiTokensByTokenIdPayload {
   name?: string;
 }
 
-export type PatchApiApiTokensByTokenIdData = any;
+export interface PatchApiApiTokensByTokenIdData {
+  token: {
+    id: string;
+    userId: string;
+    name: string;
+    permissions: string[] | null;
+    lastUsedAt: string | null;
+    expiresAt: string | null;
+    createdAt: string;
+    updatedAt: string;
+  };
+}
 
-export type DeleteApiApiTokensByTokenIdData = any;
+export type PatchApiApiTokensByTokenIdError = {
+  error: string;
+};
+
+export interface DeleteApiApiTokensByTokenIdData {
+  message: string;
+}
+
+export type DeleteApiApiTokensByTokenIdError = {
+  error: string;
+};
+
+export type GetApiImagesServeByImageIdError = {
+  error: string;
+};
+
+export interface PostApiImagesUploadByRoomIdByNoteIdPayload {
+  files: File | File[];
+}
+
+export interface PostApiImagesUploadByRoomIdByNoteIdData {
+  success: boolean;
+  images: {
+    id: string;
+    filename: string;
+    originalName: string;
+    url: string;
+    size: number;
+  }[];
+}
+
+export type PostApiImagesUploadByRoomIdByNoteIdError = {
+  error: string;
+};
+
+export interface GetApiImagesByRoomIdByNoteIdData {
+  images: {
+    id: string;
+    filename: string;
+    originalName: string;
+    url: string;
+    size: number;
+    mimeType: string;
+    createdAt: string;
+  }[];
+}
+
+export type GetApiImagesByRoomIdByNoteIdError = {
+  error: string;
+};
+
+export interface GetApiImagesUrlByImageIdData {
+  url: string;
+}
+
+export type GetApiImagesUrlByImageIdError = {
+  error: string;
+};
 
 export type GetApiData = any;
 
 export type GetApiHealthData = any;
 
-export type GetApiUserData = any;
-
-export type GetApiAuthSessionData = any;
+export type GetIndexData = any;

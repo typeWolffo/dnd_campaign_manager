@@ -44,7 +44,7 @@ export default function SignUp() {
     try {
       await signUp.email(data, {
         onSuccess: () => {
-          navigate("/dashboard");
+          navigate("/");
         },
         onError: error => {
           console.error("Sign up error:", error);

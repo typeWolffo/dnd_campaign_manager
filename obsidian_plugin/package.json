@@ -7,7 +7,7 @@
 		"dev": "node esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
 		"version": "node version-bump.mjs && git add manifest.json versions.json",
-		"generate:client": "swagger-typescript-api generate --path http://localhost:4000/api/swagger/json -o ./src/api --axios --name generated-api.ts --api-class-name API --extract-request-params --extract-request-body --extract-response-body --extract-response-error --modular --no-format-code"
+		"generate:client": "swagger-typescript-api generate --path http://localhost:4000/swagger/json -o ./src/api --axios --name generated-api.ts --api-class-name API --extract-request-params --extract-request-body --extract-response-body --extract-response-error --modular --no-format-code"
 	},
 	"keywords": [
 		"obsidian",

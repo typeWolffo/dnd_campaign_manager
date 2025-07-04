@@ -9,4 +9,6 @@ const db = drizzle({
   schema,
 });
 
+export type DbInstance = typeof db;
+
 export { db };

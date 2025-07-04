@@ -1,8 +1,11 @@
 import type { Route } from "./+types/home";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { useSession } from "../lib/auth-client";
+import { useLastRoom } from "../lib/use-last-room";
+import { useRooms } from "../lib/api-hooks";
+import { useEffect } from "react";
 
 export function meta(_args: Route.MetaArgs) {
   return [
@@ -16,6 +19,19 @@ export function meta(_args: Route.MetaArgs) {
 
 export default function Home() {
   const { data: session } = useSession();
+  const { data: rooms } = useRooms();
+  const { lastRoomId } = useLastRoom();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (session && rooms) {
+      if (lastRoomId && rooms.some(room => room.id === lastRoomId)) {
+        navigate(`/rooms/${lastRoomId}`);
+      } else if (rooms.length > 0) {
+        navigate(`/rooms/${rooms[0].id}`);
+      }
+    }
+  }, [session, rooms, lastRoomId, navigate]);
 
   return (
     <div className="min-h-screen bg-dungeon-gradient">
@@ -30,11 +46,7 @@ export default function Home() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            {session ? (
-              <Button asChild size="lg">
-                <Link to="/dashboard">Go to Dashboard</Link>
-              </Button>
-            ) : (
+            {!session && (
               <>
                 <Button asChild size="lg">
                   <Link to="/sign-up">Get Started</Link>

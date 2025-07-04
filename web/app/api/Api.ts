@@ -12,168 +12,212 @@
 
 import type {
   DeleteApiApiTokensByTokenIdData,
+  DeleteApiApiTokensByTokenIdError,
   DeleteApiApiTokensData,
-  DeleteApiRoomsByIdData,
-  DeleteApiRoomsByIdMembersByMemberIdData,
-  DeleteApiRoomsByIdNotesByNoteIdData,
-  DeleteApiRoomsByIdNotesByNoteIdError,
+  DeleteApiApiTokensError,
+  DeleteApiRoomsByRoomIdData,
+  DeleteApiRoomsByRoomIdError,
+  DeleteApiRoomsByRoomIdMembersByMemberIdData,
+  DeleteApiRoomsByRoomIdMembersByMemberIdError,
+  DeleteApiRoomsByRoomIdNotesByNoteIdData,
+  DeleteApiRoomsByRoomIdNotesByNoteIdError,
   GetApiApiTokensData,
-  GetApiAuthSessionData,
+  GetApiApiTokensError,
   GetApiData,
   GetApiHealthData,
   GetApiImagesByRoomIdByNoteIdData,
-  GetApiImagesServeByImageIdData,
+  GetApiImagesByRoomIdByNoteIdError,
+  GetApiImagesServeByImageIdError,
   GetApiImagesUrlByImageIdData,
-  GetApiRoomsByIdData,
-  GetApiRoomsByIdNotesData,
+  GetApiImagesUrlByImageIdError,
+  GetApiRoomsByRoomIdData,
+  GetApiRoomsByRoomIdError,
+  GetApiRoomsByRoomIdMembersData,
+  GetApiRoomsByRoomIdMembersError,
+  GetApiRoomsByRoomIdNotesData,
+  GetApiRoomsByRoomIdNotesError,
   GetApiRoomsData,
-  GetApiRoomsSearchUsersData,
-  GetApiRoomsSearchUsersParams,
-  GetApiUserData,
+  GetApiRoomsError,
   PatchApiApiTokensByTokenIdData,
+  PatchApiApiTokensByTokenIdError,
   PatchApiApiTokensByTokenIdPayload,
-  PatchApiRoomsByIdData,
-  PatchApiRoomsByIdPayload,
+  PatchApiRoomsByRoomIdData,
+  PatchApiRoomsByRoomIdError,
+  PatchApiRoomsByRoomIdPayload,
   PostApiApiTokensData,
+  PostApiApiTokensError,
   PostApiApiTokensPayload,
   PostApiImagesUploadByRoomIdByNoteIdData,
+  PostApiImagesUploadByRoomIdByNoteIdError,
   PostApiImagesUploadByRoomIdByNoteIdPayload,
-  PostApiRoomsByIdMembersData,
-  PostApiRoomsByIdMembersPayload,
-  PostApiRoomsByIdNotesData,
-  PostApiRoomsByIdNotesError,
-  PostApiRoomsByIdNotesPayload,
+  PostApiRoomsByRoomIdMembersData,
+  PostApiRoomsByRoomIdMembersError,
+  PostApiRoomsByRoomIdMembersPayload,
+  PostApiRoomsByRoomIdNotesData,
+  PostApiRoomsByRoomIdNotesError,
+  PostApiRoomsByRoomIdNotesPayload,
   PostApiRoomsData,
+  PostApiRoomsError,
   PostApiRoomsPayload,
-  PutApiRoomsByIdNotesByNoteIdData,
-  PutApiRoomsByIdNotesByNoteIdError,
-  PutApiRoomsByIdNotesByNoteIdPayload,
+  PutApiRoomsByRoomIdNotesByNoteIdData,
+  PutApiRoomsByRoomIdNotesByNoteIdError,
+  PutApiRoomsByRoomIdNotesByNoteIdPayload,
 } from "./data-contracts";
 import { ContentType, HttpClient, type RequestParams } from "./http-client";
 
 export class Api<SecurityDataType = unknown> extends HttpClient<SecurityDataType> {
   /**
-   * No description
+   * @description Get all rooms for the authenticated user
    *
+   * @tags Rooms
    * @name GetApiRooms
+   * @summary Get user rooms
    * @request GET:/api/rooms/
    */
   getApiRooms = (params: RequestParams = {}) =>
-    this.request<GetApiRoomsData, any>({
+    this.request<GetApiRoomsData, GetApiRoomsError>({
       path: `/api/rooms/`,
       method: "GET",
       format: "json",
       ...params,
     });
   /**
-   * No description
+   * @description Create a new room
    *
+   * @tags Rooms
    * @name PostApiRooms
+   * @summary Create room
    * @request POST:/api/rooms/
    */
   postApiRooms = (data: PostApiRoomsPayload, params: RequestParams = {}) =>
-    this.request<PostApiRoomsData, any>({
+    this.request<PostApiRoomsData, PostApiRoomsError>({
       path: `/api/rooms/`,
       method: "POST",
       body: data,
       type: ContentType.Json,
+      format: "json",
       ...params,
     });
   /**
-   * No description
+   * @description Get a specific room by ID
    *
-   * @name GetApiRoomsById
-   * @request GET:/api/rooms/{id}
+   * @tags Rooms
+   * @name GetApiRoomsByRoomId
+   * @summary Get room
+   * @request GET:/api/rooms/{roomId}
    */
-  getApiRoomsById = (id: string, params: RequestParams = {}) =>
-    this.request<GetApiRoomsByIdData, any>({
-      path: `/api/rooms/${id}`,
+  getApiRoomsByRoomId = (roomId: string, params: RequestParams = {}) =>
+    this.request<GetApiRoomsByRoomIdData, GetApiRoomsByRoomIdError>({
+      path: `/api/rooms/${roomId}`,
       method: "GET",
       format: "json",
       ...params,
     });
   /**
-   * No description
+   * @description Update room details (GM only)
    *
-   * @name PatchApiRoomsById
-   * @request PATCH:/api/rooms/{id}
+   * @tags Rooms
+   * @name PatchApiRoomsByRoomId
+   * @summary Update room
+   * @request PATCH:/api/rooms/{roomId}
    */
-  patchApiRoomsById = (id: string, data: PatchApiRoomsByIdPayload, params: RequestParams = {}) =>
-    this.request<PatchApiRoomsByIdData, any>({
-      path: `/api/rooms/${id}`,
+  patchApiRoomsByRoomId = (
+    roomId: string,
+    data: PatchApiRoomsByRoomIdPayload,
+    params: RequestParams = {}
+  ) =>
+    this.request<PatchApiRoomsByRoomIdData, PatchApiRoomsByRoomIdError>({
+      path: `/api/rooms/${roomId}`,
       method: "PATCH",
       body: data,
       type: ContentType.Json,
+      format: "json",
       ...params,
     });
   /**
-   * No description
+   * @description Delete a room (GM only)
    *
-   * @name DeleteApiRoomsById
-   * @request DELETE:/api/rooms/{id}
+   * @tags Rooms
+   * @name DeleteApiRoomsByRoomId
+   * @summary Delete room
+   * @request DELETE:/api/rooms/{roomId}
    */
-  deleteApiRoomsById = (id: string, params: RequestParams = {}) =>
-    this.request<DeleteApiRoomsByIdData, any>({
-      path: `/api/rooms/${id}`,
+  deleteApiRoomsByRoomId = (roomId: string, params: RequestParams = {}) =>
+    this.request<DeleteApiRoomsByRoomIdData, DeleteApiRoomsByRoomIdError>({
+      path: `/api/rooms/${roomId}`,
       method: "DELETE",
+      format: "json",
       ...params,
     });
   /**
-   * No description
+   * @description Get all members of a specific room
    *
-   * @name PostApiRoomsByIdMembers
-   * @request POST:/api/rooms/{id}/members
+   * @tags Rooms
+   * @name GetApiRoomsByRoomIdMembers
+   * @summary Get room members
+   * @request GET:/api/rooms/{roomId}/members
    */
-  postApiRoomsByIdMembers = (
-    id: string,
-    data: PostApiRoomsByIdMembersPayload,
+  getApiRoomsByRoomIdMembers = (roomId: string, params: RequestParams = {}) =>
+    this.request<GetApiRoomsByRoomIdMembersData, GetApiRoomsByRoomIdMembersError>({
+      path: `/api/rooms/${roomId}/members`,
+      method: "GET",
+      format: "json",
+      ...params,
+    });
+  /**
+   * @description Add a new member to the room (GM only)
+   *
+   * @tags Rooms
+   * @name PostApiRoomsByRoomIdMembers
+   * @summary Add room member
+   * @request POST:/api/rooms/{roomId}/members
+   */
+  postApiRoomsByRoomIdMembers = (
+    roomId: string,
+    data: PostApiRoomsByRoomIdMembersPayload,
     params: RequestParams = {}
   ) =>
-    this.request<PostApiRoomsByIdMembersData, any>({
-      path: `/api/rooms/${id}/members`,
+    this.request<PostApiRoomsByRoomIdMembersData, PostApiRoomsByRoomIdMembersError>({
+      path: `/api/rooms/${roomId}/members`,
       method: "POST",
       body: data,
       type: ContentType.Json,
+      format: "json",
       ...params,
     });
   /**
-   * No description
+   * @description Remove a member from the room (GM only)
    *
-   * @name DeleteApiRoomsByIdMembersByMemberId
-   * @request DELETE:/api/rooms/{id}/members/{memberId}
+   * @tags Rooms
+   * @name DeleteApiRoomsByRoomIdMembersByMemberId
+   * @summary Remove room member
+   * @request DELETE:/api/rooms/{roomId}/members/{memberId}
    */
-  deleteApiRoomsByIdMembersByMemberId = (
-    id: string,
+  deleteApiRoomsByRoomIdMembersByMemberId = (
+    roomId: string,
     memberId: string,
     params: RequestParams = {}
   ) =>
-    this.request<DeleteApiRoomsByIdMembersByMemberIdData, any>({
-      path: `/api/rooms/${id}/members/${memberId}`,
+    this.request<
+      DeleteApiRoomsByRoomIdMembersByMemberIdData,
+      DeleteApiRoomsByRoomIdMembersByMemberIdError
+    >({
+      path: `/api/rooms/${roomId}/members/${memberId}`,
       method: "DELETE",
+      format: "json",
       ...params,
     });
   /**
-   * No description
+   * @description Get all notes for a specific room
    *
-   * @name GetApiRoomsSearchUsers
-   * @request GET:/api/rooms/search/users
+   * @tags Notes
+   * @name GetApiRoomsByRoomIdNotes
+   * @summary Get notes
+   * @request GET:/api/rooms/{roomId}/notes
    */
-  getApiRoomsSearchUsers = (query: GetApiRoomsSearchUsersParams, params: RequestParams = {}) =>
-    this.request<GetApiRoomsSearchUsersData, any>({
-      path: `/api/rooms/search/users`,
-      method: "GET",
-      query: query,
-      ...params,
-    });
-  /**
-   * No description
-   *
-   * @name GetApiRoomsByIdNotes
-   * @request GET:/api/rooms/{id}/notes
-   */
-  getApiRoomsByIdNotes = (id: string, params: RequestParams = {}) =>
-    this.request<GetApiRoomsByIdNotesData, any>({
-      path: `/api/rooms/${id}/notes`,
+  getApiRoomsByRoomIdNotes = (roomId: string, params: RequestParams = {}) =>
+    this.request<GetApiRoomsByRoomIdNotesData, GetApiRoomsByRoomIdNotesError>({
+      path: `/api/rooms/${roomId}/notes`,
       method: "GET",
       format: "json",
       ...params,
@@ -182,17 +226,17 @@ export class Api<SecurityDataType = unknown> extends HttpClient<SecurityDataType
    * @description Create a new note with sections
    *
    * @tags Notes
-   * @name PostApiRoomsByIdNotes
+   * @name PostApiRoomsByRoomIdNotes
    * @summary Create note
-   * @request POST:/api/rooms/{id}/notes
+   * @request POST:/api/rooms/{roomId}/notes
    */
-  postApiRoomsByIdNotes = (
-    id: string,
-    data: PostApiRoomsByIdNotesPayload,
+  postApiRoomsByRoomIdNotes = (
+    roomId: string,
+    data: PostApiRoomsByRoomIdNotesPayload,
     params: RequestParams = {}
   ) =>
-    this.request<PostApiRoomsByIdNotesData, PostApiRoomsByIdNotesError>({
-      path: `/api/rooms/${id}/notes`,
+    this.request<PostApiRoomsByRoomIdNotesData, PostApiRoomsByRoomIdNotesError>({
+      path: `/api/rooms/${roomId}/notes`,
       method: "POST",
       body: data,
       type: ContentType.Json,
@@ -203,18 +247,18 @@ export class Api<SecurityDataType = unknown> extends HttpClient<SecurityDataType
    * @description Update an existing note
    *
    * @tags Notes
-   * @name PutApiRoomsByIdNotesByNoteId
+   * @name PutApiRoomsByRoomIdNotesByNoteId
    * @summary Update note
-   * @request PUT:/api/rooms/{id}/notes/{noteId}
+   * @request PUT:/api/rooms/{roomId}/notes/{noteId}
    */
-  putApiRoomsByIdNotesByNoteId = (
-    id: string,
+  putApiRoomsByRoomIdNotesByNoteId = (
+    roomId: string,
     noteId: string,
-    data: PutApiRoomsByIdNotesByNoteIdPayload,
+    data: PutApiRoomsByRoomIdNotesByNoteIdPayload,
     params: RequestParams = {}
   ) =>
-    this.request<PutApiRoomsByIdNotesByNoteIdData, PutApiRoomsByIdNotesByNoteIdError>({
-      path: `/api/rooms/${id}/notes/${noteId}`,
+    this.request<PutApiRoomsByRoomIdNotesByNoteIdData, PutApiRoomsByRoomIdNotesByNoteIdError>({
+      path: `/api/rooms/${roomId}/notes/${noteId}`,
       method: "PUT",
       body: data,
       type: ContentType.Json,
@@ -225,33 +269,126 @@ export class Api<SecurityDataType = unknown> extends HttpClient<SecurityDataType
    * @description Delete a note
    *
    * @tags Notes
-   * @name DeleteApiRoomsByIdNotesByNoteId
+   * @name DeleteApiRoomsByRoomIdNotesByNoteId
    * @summary Delete note
-   * @request DELETE:/api/rooms/{id}/notes/{noteId}
+   * @request DELETE:/api/rooms/{roomId}/notes/{noteId}
    */
-  deleteApiRoomsByIdNotesByNoteId = (id: string, noteId: string, params: RequestParams = {}) =>
-    this.request<DeleteApiRoomsByIdNotesByNoteIdData, DeleteApiRoomsByIdNotesByNoteIdError>({
-      path: `/api/rooms/${id}/notes/${noteId}`,
+  deleteApiRoomsByRoomIdNotesByNoteId = (
+    roomId: string,
+    noteId: string,
+    params: RequestParams = {}
+  ) =>
+    this.request<DeleteApiRoomsByRoomIdNotesByNoteIdData, DeleteApiRoomsByRoomIdNotesByNoteIdError>(
+      {
+        path: `/api/rooms/${roomId}/notes/${noteId}`,
+        method: "DELETE",
+        format: "json",
+        ...params,
+      }
+    );
+  /**
+   * @description Get all API tokens for the authenticated user
+   *
+   * @tags API Tokens
+   * @name GetApiApiTokens
+   * @summary Get user API tokens
+   * @request GET:/api/api-tokens/
+   */
+  getApiApiTokens = (params: RequestParams = {}) =>
+    this.request<GetApiApiTokensData, GetApiApiTokensError>({
+      path: `/api/api-tokens/`,
+      method: "GET",
+      format: "json",
+      ...params,
+    });
+  /**
+   * @description Create a new API token
+   *
+   * @tags API Tokens
+   * @name PostApiApiTokens
+   * @summary Create API token
+   * @request POST:/api/api-tokens/
+   */
+  postApiApiTokens = (data: PostApiApiTokensPayload, params: RequestParams = {}) =>
+    this.request<PostApiApiTokensData, PostApiApiTokensError>({
+      path: `/api/api-tokens/`,
+      method: "POST",
+      body: data,
+      type: ContentType.Json,
+      format: "json",
+      ...params,
+    });
+  /**
+   * @description Revoke all API tokens for the authenticated user
+   *
+   * @tags API Tokens
+   * @name DeleteApiApiTokens
+   * @summary Revoke all tokens
+   * @request DELETE:/api/api-tokens/
+   */
+  deleteApiApiTokens = (params: RequestParams = {}) =>
+    this.request<DeleteApiApiTokensData, DeleteApiApiTokensError>({
+      path: `/api/api-tokens/`,
       method: "DELETE",
       format: "json",
       ...params,
     });
   /**
-   * No description
+   * @description Update an existing API token (name only)
    *
+   * @tags API Tokens
+   * @name PatchApiApiTokensByTokenId
+   * @summary Update API token
+   * @request PATCH:/api/api-tokens/{tokenId}
+   */
+  patchApiApiTokensByTokenId = (
+    tokenId: string,
+    data: PatchApiApiTokensByTokenIdPayload,
+    params: RequestParams = {}
+  ) =>
+    this.request<PatchApiApiTokensByTokenIdData, PatchApiApiTokensByTokenIdError>({
+      path: `/api/api-tokens/${tokenId}`,
+      method: "PATCH",
+      body: data,
+      type: ContentType.Json,
+      format: "json",
+      ...params,
+    });
+  /**
+   * @description Delete a specific API token
+   *
+   * @tags API Tokens
+   * @name DeleteApiApiTokensByTokenId
+   * @summary Delete API token
+   * @request DELETE:/api/api-tokens/{tokenId}
+   */
+  deleteApiApiTokensByTokenId = (tokenId: string, params: RequestParams = {}) =>
+    this.request<DeleteApiApiTokensByTokenIdData, DeleteApiApiTokensByTokenIdError>({
+      path: `/api/api-tokens/${tokenId}`,
+      method: "DELETE",
+      format: "json",
+      ...params,
+    });
+  /**
+   * @description Serve an image file directly from storage
+   *
+   * @tags Images
    * @name GetApiImagesServeByImageId
+   * @summary Serve image
    * @request GET:/api/images/serve/{imageId}
    */
   getApiImagesServeByImageId = (imageId: string, params: RequestParams = {}) =>
-    this.request<GetApiImagesServeByImageIdData, any>({
+    this.request<any, GetApiImagesServeByImageIdError>({
       path: `/api/images/serve/${imageId}`,
       method: "GET",
       ...params,
     });
   /**
-   * No description
+   * @description Upload one or more images to a note
    *
+   * @tags Images
    * @name PostApiImagesUploadByRoomIdByNoteId
+   * @summary Upload images
    * @request POST:/api/images/upload/{roomId}/{noteId}
    */
   postApiImagesUploadByRoomIdByNoteId = (
@@ -260,103 +397,44 @@ export class Api<SecurityDataType = unknown> extends HttpClient<SecurityDataType
     data: PostApiImagesUploadByRoomIdByNoteIdPayload,
     params: RequestParams = {}
   ) =>
-    this.request<PostApiImagesUploadByRoomIdByNoteIdData, any>({
-      path: `/api/images/upload/${roomId}/${noteId}`,
-      method: "POST",
-      body: data,
-      type: ContentType.Json,
-      ...params,
-    });
+    this.request<PostApiImagesUploadByRoomIdByNoteIdData, PostApiImagesUploadByRoomIdByNoteIdError>(
+      {
+        path: `/api/images/upload/${roomId}/${noteId}`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }
+    );
   /**
-   * No description
+   * @description Get all images for a specific note
    *
+   * @tags Images
    * @name GetApiImagesByRoomIdByNoteId
+   * @summary Get images
    * @request GET:/api/images/{roomId}/{noteId}
    */
   getApiImagesByRoomIdByNoteId = (roomId: string, noteId: string, params: RequestParams = {}) =>
-    this.request<GetApiImagesByRoomIdByNoteIdData, any>({
+    this.request<GetApiImagesByRoomIdByNoteIdData, GetApiImagesByRoomIdByNoteIdError>({
       path: `/api/images/${roomId}/${noteId}`,
       method: "GET",
+      format: "json",
       ...params,
     });
   /**
-   * No description
+   * @description Get the URL for a specific image
    *
+   * @tags Images
    * @name GetApiImagesUrlByImageId
+   * @summary Get image URL
    * @request GET:/api/images/url/{imageId}
    */
   getApiImagesUrlByImageId = (imageId: string, params: RequestParams = {}) =>
-    this.request<GetApiImagesUrlByImageIdData, any>({
+    this.request<GetApiImagesUrlByImageIdData, GetApiImagesUrlByImageIdError>({
       path: `/api/images/url/${imageId}`,
       method: "GET",
-      ...params,
-    });
-  /**
-   * No description
-   *
-   * @name GetApiApiTokens
-   * @request GET:/api/api-tokens/
-   */
-  getApiApiTokens = (params: RequestParams = {}) =>
-    this.request<GetApiApiTokensData, any>({
-      path: `/api/api-tokens/`,
-      method: "GET",
-      ...params,
-    });
-  /**
-   * No description
-   *
-   * @name PostApiApiTokens
-   * @request POST:/api/api-tokens/
-   */
-  postApiApiTokens = (data: PostApiApiTokensPayload, params: RequestParams = {}) =>
-    this.request<PostApiApiTokensData, any>({
-      path: `/api/api-tokens/`,
-      method: "POST",
-      body: data,
-      type: ContentType.Json,
-      ...params,
-    });
-  /**
-   * No description
-   *
-   * @name DeleteApiApiTokens
-   * @request DELETE:/api/api-tokens/
-   */
-  deleteApiApiTokens = (params: RequestParams = {}) =>
-    this.request<DeleteApiApiTokensData, any>({
-      path: `/api/api-tokens/`,
-      method: "DELETE",
-      ...params,
-    });
-  /**
-   * No description
-   *
-   * @name PatchApiApiTokensByTokenId
-   * @request PATCH:/api/api-tokens/{tokenId}
-   */
-  patchApiApiTokensByTokenId = (
-    tokenId: string,
-    data: PatchApiApiTokensByTokenIdPayload,
-    params: RequestParams = {}
-  ) =>
-    this.request<PatchApiApiTokensByTokenIdData, any>({
-      path: `/api/api-tokens/${tokenId}`,
-      method: "PATCH",
-      body: data,
-      type: ContentType.Json,
-      ...params,
-    });
-  /**
-   * No description
-   *
-   * @name DeleteApiApiTokensByTokenId
-   * @request DELETE:/api/api-tokens/{tokenId}
-   */
-  deleteApiApiTokensByTokenId = (tokenId: string, params: RequestParams = {}) =>
-    this.request<DeleteApiApiTokensByTokenIdData, any>({
-      path: `/api/api-tokens/${tokenId}`,
-      method: "DELETE",
+      format: "json",
       ...params,
     });
   /**
@@ -380,30 +458,6 @@ export class Api<SecurityDataType = unknown> extends HttpClient<SecurityDataType
   getApiHealth = (params: RequestParams = {}) =>
     this.request<GetApiHealthData, any>({
       path: `/api/health`,
-      method: "GET",
-      ...params,
-    });
-  /**
-   * No description
-   *
-   * @name GetApiUser
-   * @request GET:/api/user
-   */
-  getApiUser = (params: RequestParams = {}) =>
-    this.request<GetApiUserData, any>({
-      path: `/api/user`,
-      method: "GET",
-      ...params,
-    });
-  /**
-   * No description
-   *
-   * @name GetApiAuthSession
-   * @request GET:/api/auth/session
-   */
-  getApiAuthSession = (params: RequestParams = {}) =>
-    this.request<GetApiAuthSessionData, any>({
-      path: `/api/auth/session`,
       method: "GET",
       ...params,
     });

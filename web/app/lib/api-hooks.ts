@@ -11,7 +11,6 @@ export const useRooms = () => {
     queryFn: async () => {
       // const response = await apiClient.api.rooms.get();
       const response = await ApiClient.getApiRooms();
-      if (response.error) throw new Error("Failed to fetch rooms");
       return response.data;
     },
   });
@@ -21,7 +20,7 @@ export const useRoom = (roomId: string) => {
   return useQuery({
     queryKey: queryKeys.rooms.byId(roomId).queryKey,
     queryFn: async () => {
-      const response = await ApiClient.getApiRoomsById(roomId);
+      const response = await ApiClient.getApiRoomsByRoomId(roomId);
       return response.data;
     },
     enabled: !!roomId,
@@ -119,7 +118,7 @@ export const useRoomNotes = (roomId: string) => {
   return useQuery({
     queryKey: queryKeys.notes.byRoomId(roomId).queryKey,
     queryFn: async () => {
-      const response = await ApiClient.getApiRoomsByIdNotes(roomId);
+      const response = await ApiClient.getApiRoomsByRoomIdNotes(roomId);
 
       return response.data;
     },
@@ -159,8 +158,8 @@ export const useCreateApiToken = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: { name: string; permissions?: string[]; expiresAt?: Date }) => {
-      const response = await apiClient.api["api-tokens"].post(data);
+    mutationFn: async (data: { name: string; permissions?: string[]; expiresAt?: string }) => {
+      const response = await ApiClient.postApiApiTokens(data);
       return response.data;
     },
     onSuccess: () => {

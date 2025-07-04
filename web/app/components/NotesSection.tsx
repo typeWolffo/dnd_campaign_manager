@@ -277,15 +277,11 @@ export function NotesSection({ roomId, isGM }: NotesSectionProps) {
 
   const { data: selectedNoteImages } = useNoteImages(roomId, selectedNoteId || "");
 
-  console.log(notes);
-
-  // Simple note selection with folder expansion
   const handleNoteSelect = (note: Note) => {
     setSelectedNoteId(note.id);
 
-    // Auto-expand folders to show the selected note
     const pathParts = note.obsidianPath.split("/");
-    pathParts.pop(); // Remove filename
+    pathParts.pop();
     const foldersToExpand: string[] = [];
 
     for (let i = 0; i < pathParts.length; i++) {
@@ -363,22 +359,25 @@ export function NotesSection({ roomId, isGM }: NotesSectionProps) {
           <CardDescription>Published notes from your Obsidian vault</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 md:h-[600px] h-[800px]">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-0 gap-y-6 md:gap-y-0">
             {/* Files Explorer */}
-            <div className="border-r">
+            <div className="border-b md:border-b-0 md:border-r overflow-x-auto overflow-y-auto lg:col-span-1 min-w-[200px] md:h-[600px] h-[800px]">
               <Files
-                className="border-0 rounded-none h-full bg-transparent"
+                className="border-0 rounded-none h-full bg-transparent w-max min-w-full"
                 open={expandedFolders}
                 onOpenChange={setExpandedFolders}
               >
-                {renderFolderStructure(folderStructure, selectedNote, (note: Note) =>
-                  handleNoteSelect(note)
+                {renderFolderStructure(
+                  folderStructure,
+                  selectedNote,
+                  (note: Note) => handleNoteSelect(note),
+                  ""
                 )}
               </Files>
             </div>
 
             {/* Note Content */}
-            <div className="p-6 overflow-auto">
+            <div className="p-6 overflow-scroll lg:col-span-2 md:h-[600px] h-[800px]">
               {selectedNote ? (
                 <div>
                   <div className="flex items-center justify-between mb-4">
